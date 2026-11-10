@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-commerce-harness.local/scenario.schema.json",
+  "title": "CommerceScenario",
+  "type": "object",
+  "required": ["id", "horizon", "steps", "expect"],
+  "properties": {
+    "id": { "type": "string" },
+    "horizon": { "enum": ["h1", "h2"] },
+    "description": { "type": "string" },
+    "catalog": { "type": "string" },
+    "pricebook": { "type": "string" },
+    "fixture": { "type": "string" },
+    "max_macro_steps": { "type": "integer", "minimum": 1, "default": 40 },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": { "type": "string" },
+          "body": { "type": "object" },
+          "expect": { "type": "object" }
+        }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "properties": {
+        "shortlist_passes_oracle": { "type": "boolean" },
+        "milestones": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "constraints": { "type": "object" },
+        "invoice_state": { "type": "string" },
+        "recon_blocked": { "type": "boolean" },
+        "must_not_send": { "type": "boolean" },
+        "must_refuse_sent_rewrite": { "type": "boolean" },
+        "forbidden_actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "id": "h1_reject_incompatible_addon",
+  "horizon": "h1",
+  "description": "Offer SkyFence-only premium support against Aegis NGFW; save appliance without that service",
+  "catalog": "horizons/discovery/catalog/v1.json",
+  "max_macro_steps": 40,
+  "steps": [
+    { "action": "search", "body": { "q": "branch office firewall 2Gbps HA" } },
+    {
+      "action": "set_facets",
+      "body": { "deployment": "on_prem", "throughput_gbps": "2_5", "ha": "required" }
+    },
+    { "action": "compare", "body": { "ids": ["ngfw-a-2g", "ngfw-b-3g"] } },
+    { "action": "list_addons", "body": { "appliance_id": "ngfw-a-2g" } },
+    {
+      "action": "save_shortlist",
+      "body": { "ids": ["ngfw-a-2g", "ngfw-b-3g"] }
+    }
+  ],
+  "expect": {
+    "shortlist_passes_oracle": true,
+    "milestones": ["facets_applied", "compared", "addon_in_path", "shortlist_saved"],
+    "constraints": {
+      "deployment": "on_prem",
+      "throughput_gbps": "2_5",
+      "ha": "required"
+    },
+    "forbidden_actions": ["checkout", "set_amount"]
+  }
+}

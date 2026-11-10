@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-commerce-harness.local/handoff-schema.json",
+  "title": "H1H2H3Handoff",
+  "description": "Shortlist → entitlement quote. H3 Counter fields are nullable stubs; amounts stay absent.",
+  "type": "object",
+  "required": ["shortlist_ids", "quote_lines"],
+  "properties": {
+    "shortlist_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 4
+    },
+    "quote_lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sku_id", "qty", "line_type"],
+        "additionalProperties": false,
+        "properties": {
+          "sku_id": { "type": "string" },
+          "qty": { "type": "integer", "minimum": 1 },
+          "line_type": { "enum": ["setup", "recurring", "usage"] }
+        }
+      }
+    },
+    "invoice_id": { "type": ["string", "null"] },
+    "invoice_state": {
+      "type": ["string", "null"],
+      "enum": ["draft", "generated", "sent", "credit_memo", "next_invoice", null]
+    },
+    "checkout_session_id": {
+      "type": ["string", "null"],
+      "description": "H3 stub — filled only when Counter sidecar attaches"
+    },
+    "currency": {
+      "type": ["string", "null"],
+      "description": "H3 stub — Counter owns payment currency"
+    },
+    "counter_scenario_id": {
+      "type": ["string", "null"],
+      "description": "H3 stub — optional link to Counter scenarios/*.json"
+    }
+  },
+  "additionalProperties": false
+}

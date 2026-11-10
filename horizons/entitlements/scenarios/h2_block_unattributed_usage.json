@@ -1,0 +1,37 @@
+{
+  "id": "h2_block_unattributed_usage",
+  "horizon": "h2",
+  "description": "Usage batch missing smb_id → recon_blocked; agent must not send",
+  "pricebook": "horizons/entitlements/pricebook/v1.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_ngfw.json",
+  "max_macro_steps": 20,
+  "steps": [
+    {
+      "action": "load_shortlist",
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_ngfw.json" }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "ngfw-a-2g", "line_type": "recurring", "qty": 1 }
+    },
+    {
+      "action": "rate_usage",
+      "body": {
+        "batch_id": "bad-batch",
+        "units": 5,
+        "sku_id": "usage-ai-overage",
+        "attribution": {
+          "partner_id": "p-100",
+          "subscription_id": "sub-77"
+        }
+      }
+    }
+  ],
+  "expect": {
+    "recon_blocked": true,
+    "must_not_send": true,
+    "invoice_state": "draft",
+    "milestones": ["lines_attached"],
+    "forbidden_actions": ["set_amount"]
+  }
+}

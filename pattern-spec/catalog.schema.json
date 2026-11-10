@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-commerce-harness.local/catalog.schema.json",
+  "title": "DiscoveryCatalog",
+  "type": "object",
+  "required": ["version", "skus"],
+  "properties": {
+    "version": { "type": "string" },
+    "skus": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sku" }
+    }
+  },
+  "$defs": {
+    "sku": {
+      "type": "object",
+      "required": [
+        "id",
+        "vendor",
+        "name",
+        "kind",
+        "family",
+        "deployment",
+        "throughput_gbps",
+        "ha",
+        "hypervisor",
+        "license",
+        "certs",
+        "sla",
+        "compatible_with"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string" },
+        "vendor": { "type": "string" },
+        "name": { "type": "string" },
+        "kind": { "enum": ["physical", "virtual", "service"] },
+        "family": { "type": "string" },
+        "deployment": { "enum": ["on_prem", "virtual", "hybrid", "na"] },
+        "throughput_gbps": { "enum": ["lt2", "2_5", "5_10", "na"] },
+        "ha": { "enum": ["required_capable", "no", "na"] },
+        "hypervisor": { "enum": ["vmware", "hyperv", "cloud", "na"] },
+        "license": { "enum": ["perpetual", "subscription", "na"] },
+        "vcpu": { "type": ["integer", "null"] },
+        "ram_gb": { "type": ["integer", "null"] },
+        "certs": {
+          "type": "array",
+          "items": { "enum": ["fedramp", "cc", "soc2"] }
+        },
+        "sla": { "enum": ["8x5", "24x7", "na"] },
+        "compatible_with": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "ports": { "type": ["integer", "null"] },
+        "form_factor": { "type": ["string", "null"] },
+        "marketing_blurb": { "type": "string" }
+      }
+    }
+  }
+}

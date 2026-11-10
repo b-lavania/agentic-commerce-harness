@@ -1,0 +1,38 @@
+{
+  "id": "h1_virtual_bundle",
+  "horizon": "h1",
+  "description": "Security architect: virtual hybrid + VMware subscription SOC2 → bundle threat intel + 24x7 monitoring",
+  "catalog": "horizons/discovery/catalog/v1.json",
+  "max_macro_steps": 40,
+  "steps": [
+    { "action": "search", "body": { "q": "Virtual appliance hybrid cloud" } },
+    {
+      "action": "set_facets",
+      "body": {
+        "deployment": "hybrid",
+        "hypervisor": "vmware",
+        "license": "subscription",
+        "certs": ["soc2"]
+      }
+    },
+    { "action": "compare", "body": { "ids": ["va-g-vmw", "va-h-vmw"] } },
+    { "action": "list_addons", "body": { "appliance_id": "va-g-vmw" } },
+    { "action": "attach_addon", "body": { "service_id": "svc-ti-va" } },
+    { "action": "attach_addon", "body": { "service_id": "svc-mon-va" } },
+    {
+      "action": "save_shortlist",
+      "body": { "ids": ["va-g-vmw", "va-h-vmw", "svc-ti-va", "svc-mon-va"] }
+    }
+  ],
+  "expect": {
+    "shortlist_passes_oracle": true,
+    "milestones": ["facets_applied", "compared", "addon_in_path", "shortlist_saved"],
+    "constraints": {
+      "deployment": "hybrid",
+      "hypervisor": "vmware",
+      "license": "subscription",
+      "certs": ["soc2"]
+    },
+    "forbidden_actions": ["checkout", "set_amount"]
+  }
+}
