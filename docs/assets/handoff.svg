@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 340" role="img" aria-labelledby="handoff-title handoff-desc">
+  <title id="handoff-title">Commerce to handoff to payments</title>
+  <desc id="handoff-desc">Three lanes. Quote lines cross the handoff. Ledger cents appear only on the payments side. Counter fields stay empty.</desc>
+  <style>
+    .lane { fill: #ffffff; stroke: #e8eaed; stroke-width: 2; }
+    .label { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700; fill: #0a5a46; letter-spacing: 0.04em; }
+    .body { font-family: system-ui, sans-serif; font-size: 13px; fill: #3a3f45; }
+    .mono { font-family: ui-monospace, monospace; font-size: 12px; fill: #0f1112; }
+    .muted { font-family: ui-monospace, monospace; font-size: 11px; fill: #8b92a0; }
+    .arrow { stroke: #0a5a46; stroke-width: 2; fill: none; }
+    .arrow-head { fill: #0a5a46; }
+    .miss { font-family: ui-monospace, monospace; font-size: 11px; fill: #ba7517; }
+  </style>
+
+  <rect class="lane" x="16" y="24" width="300" height="280" />
+  <rect class="lane" x="370" y="24" width="300" height="280" />
+  <rect class="lane" x="724" y="24" width="300" height="280" />
+
+  <text class="label" x="36" y="52">COMMERCE</text>
+  <text class="body" x="36" y="84">Intent: branch firewall, HA</text>
+  <text class="body" x="36" y="108">Compare: a / b / c</text>
+  <text class="mono" x="36" y="140">commit: ngfw-a-2g</text>
+  <text class="mono" x="36" y="160">         svc-mon-ngfw</text>
+  <text class="body" x="36" y="192">Oracle: pass</text>
+  <text class="muted" x="36" y="228">rank / sponsored / blurb</text>
+  <text class="muted" x="36" y="248">does not cross</text>
+
+  <text class="label" x="390" y="52">HANDOFF</text>
+  <text class="mono" x="390" y="88">ngfw-a-2g · setup · qty 1</text>
+  <text class="mono" x="390" y="108">ngfw-a-2g · recurring · qty 1</text>
+  <text class="mono" x="390" y="128">svc-mon-ngfw · recurring · qty 1</text>
+  <text class="muted" x="390" y="168">checkout_session_id —</text>
+  <text class="muted" x="390" y="188">currency —</text>
+  <text class="muted" x="390" y="208">counter_scenario_id —</text>
+  <text class="muted" x="390" y="248">no amount fields</text>
+
+  <text class="label" x="744" y="52">PAYMENTS</text>
+  <text class="body" x="744" y="84">Bill-to: p / smb / sub</text>
+  <text class="body" x="744" y="108">draft ? generated ? sent</text>
+  <text class="mono" x="744" y="140">setup $1,500.00</text>
+  <text class="mono" x="744" y="160">recurring $450.00</text>
+  <text class="mono" x="744" y="180">monitoring $120.00</text>
+  <text class="mono" x="744" y="208">total $2,070.00</text>
+  <text class="muted" x="744" y="240">after preview only</text>
+  <text class="miss" x="744" y="268">checkout refused</text>
+
+  <path class="arrow" d="M 316 150 L 360 150" />
+  <polygon class="arrow-head" points="360,150 350,145 350,155" />
+  <path class="arrow" d="M 670 150 L 714 150" />
+  <polygon class="arrow-head" points="714,150 704,145 704,155" />
+</svg>

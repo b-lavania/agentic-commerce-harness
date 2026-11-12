@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A cert for agents that shop and bill, before they check out</title>
+  <meta name="description"
+    content="Agents already pick SKUs and write invoices. Rank, seller copy, and missing permission all change the outcome. This harness grades the written buyer mandate, not which model ran.">
+  <meta property="og:title" content="agentic-commerce-harness">
+  <meta property="og:description"
+    content="Grade shopping agents on the SKU they pick, and billing agents on whether they stay inside a mandate. Ledger owns cents. Checkout comes later.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <main id="main">
+    <header>
+      <h1>Agentic <em>commerce</em> harness</h1>
+      <p class="subhead">If an agent is going to buy a firewall and put it on an invoice, someone has to check two
+        things: did it pick the SKU the buyer actually asked for, and did it bill inside the authority it was given.
+        This repo is that check. It does not move money.</p>
+      <p class="subhead-secondary">v0.1 is a Python package you can clone. Six scenarios, two in-process sims, a
+        curriculum that stops once the invoice is <code>sent</code>. Run
+        <code>./scripts/test.sh</code>.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/b-lavania/agentic-commerce-harness" target="_blank"
+          rel="noopener">View on GitHub</a>
+        <a class="btn btn-secondary" href="#run">Run it</a>
+      </div>
+    </header>
+
+    <nav aria-label="Sections">
+      <ul class="anchor-nav">
+        <li><a href="#why">Why</a></li>
+        <li><a href="#gap">Today</a></li>
+        <li><a href="#agents">Agents</a></li>
+        <li><a href="#horizons">Horizons</a></li>
+        <li><a href="#money">Money</a></li>
+        <li><a href="#certifies">Scenarios</a></li>
+        <li><a href="#example">Example</a></li>
+        <li><a href="#roadmap">Roadmap</a></li>
+        <li><a href="#run">Run</a></li>
+      </ul>
+    </nav>
+
+    <section class="band" id="why" aria-labelledby="why-heading">
+      <span class="kicker">Why this exists</span>
+      <h2 id="why-heading">Two questions, one written mandate</h2>
+      <p class="prose">Most “agentic commerce” talk collapses shopping and checkout into one demo. That is the wrong
+        unit. An agent can already change which product a buyer sees, and it can already write a bill. Those are
+        different failure modes. One is a bad SKU. The other is a bill nobody authorized. Mixing them into a single
+        “the agent bought it” score hides both.</p>
+      <p class="prose"><a href="https://arxiv.org/abs/2508.02630">ACES</a> (summarized in
+        <a href="https://www.mbi-deepdives.com/the-promise-and-pitfall-of-agentic-commerce/">MBI</a>) showed that
+        shopping agents are not small humans. They miss a cheaper identical listing. They favor a rank that depends on
+        the model, even when the catalog is just JSON. They react to sponsored tags and platform “picks.” A seller
+        rewrite of the description can move share. Upgrade the model and the modal product jumps. If you grade
+        “did something get shortlisted,” a first-hit policy looks fine.</p>
+      <p class="prose"><a
+          href="https://www.pingidentity.com/en-us/docs/blogs/agentic-commerce-2027-retail-agency">Ping’s 2027 retail
+          piece</a> is the other half. People will let an agent search and compare long before they let it pay. They
+        want caps, an approval step, and a way to undo. The retailer still has to know whom the agent represents, what
+        it may do, and how to reconstruct the action later. Checkout without that is not agency. It is an unsigned
+        payment.</p>
+      <div class="work-principles">
+        <div class="principle">
+          <span class="principle-num shipped">ACES</span>
+          <div class="principle-title">Did it pick the right SKU?</div>
+          <p class="principle-desc">Under rank, blurb, and dominance bias. Two legal firewalls both matching HA is not
+            a pass if the buyer asked for the cheaper one.</p>
+        </div>
+        <div class="principle">
+          <span class="principle-num shipped">Ping</span>
+          <div class="principle-title">Did it stay inside the mandate?</div>
+          <p class="principle-desc">Authoritative catalog and price book, preview before send, credit memo instead of
+            rewriting a sent invoice, an audit trail. Checkout stays off until that holds.</p>
+        </div>
+        <div class="principle">
+          <span class="principle-num shipped">Grade</span>
+          <div class="principle-title">The buyer’s written task</div>
+          <p class="principle-desc">Pass or fail comes from the scenario, not from which model ran. The same mandate
+            should fail GPT, Claude, and a gold script for the same reason.</p>
+        </div>
+      </div>
+      <p class="prose" style="margin-top: 16px;">That is why the harness splits a commerce agent from a payments agent,
+        and why settlement (Counter, cards, ACP) is a later sidecar. You can certify a quote and a bill without
+        standing up Stripe. You cannot certify a checkout if the quote was already wrong.</p>
+      <p class="diagram-label">Pipeline</p>
+      <div class="flow-diagram">
+        <pre class="diagram-box" role="img" aria-label="Buyer task to commerce to quote to payments to sent. Counter is later. Ledger owns cents.">
+buyer ──▶ commerce ──▶ quote ──▶ payments ──▶ sent ─ ─▶ counter
+task                   no cents                        later
+              ▲                      ▲
+              └────── ledger ────────┘
+                     owns cents
+        </pre>
+      </div>
+      <p class="state-diagram-note">The ledger sits under commerce and payments. It is the only writer of cents. The dashed arrow is settlement, not v1.</p>
+      <p class="longform-link"><a href="insights.md">Longer notes in docs/insights.md</a></p>
+    </section>
+
+    <section class="band" id="gap" aria-labelledby="gap-heading">
+      <span class="kicker">What v0.1 actually is</span>
+      <h2 id="gap-heading">Green tests replay a script</h2>
+      <p class="prose">Be honest about the current cert. The runner walks <code>steps[]</code> from a JSON file. If
+        those steps match the sim, the scenario passes. That is useful as a regression suite. It is not proof that an
+        agent would have chosen those tools. There is no model client here, and no MCP server.</p>
+      <p class="prose">A few holes make that even softer. The “reject incompatible add-on” scenario never calls
+        <code>attach_addon</code> on SkyFence premium; the runner special-cases the id. <code>attach_addon</code>
+        itself will take any service. Per-step <code>expect</code> sits on the model unused. The invoice spec says you
+        can return a generated invoice to draft; the sim only errors. The curriculum skips quote lines that are missing
+        from the price book instead of failing. <code>rate_usage</code> rates a batch and attaches the line in one
+        call, so nobody reconciles two numbers.</p>
+      <p class="prose">JSONL export is real: hashes, milestones, forbidden hits. Treat it as the start of an audit
+        log, not a training set.</p>
+    </section>
+
+    <section class="band" id="agents" aria-labelledby="agents-heading">
+      <span class="kicker">Two agents</span>
+      <h2 id="agents-heading">The quote crosses. The dollars stay put.</h2>
+      <p class="prose">Commerce searches, filters, compares, and saves a shortlist. Payments loads that shortlist,
+        attaches lines from the price book, previews, and sends. What moves between them is sku, quantity, and line
+        type. No cents. The three Counter fields on the handoff stay empty on purpose.</p>
+      <p class="prose">Today the curriculum still invents those quote lines after discovery (appliance → setup plus
+        recurring, service → recurring). That heuristic should live in the commerce sim as a quote tool, and a missing
+        price-book row should fail the run. Until then, the picture below is the contract we already have.</p>
+      <div class="handoff-card">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 340" role="img" aria-labelledby="handoff-title handoff-desc">
+          <title id="handoff-title">Commerce to handoff to payments</title>
+          <desc id="handoff-desc">Three lanes. Quote lines cross the handoff. Ledger cents appear only on the payments side. Counter fields stay empty.</desc>
+          <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="16" y="24" width="300" height="280" />
+          <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="370" y="24" width="300" height="280" />
+          <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="724" y="24" width="300" height="280" />
+          <text fill="#0a5a46" font-family="system-ui,sans-serif" font-size="13" font-weight="700" x="36" y="52">COMMERCE</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="84">Intent: branch firewall, HA</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="108">Compare: a / b / c</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="140">commit: ngfw-a-2g</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="160">         svc-mon-ngfw</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="192">Oracle: pass</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="36" y="228">rank / sponsored / blurb</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="36" y="248">does not cross</text>
+          <text fill="#0a5a46" font-family="system-ui,sans-serif" font-size="13" font-weight="700" x="390" y="52">HANDOFF</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="88">ngfw-a-2g · setup · qty 1</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="108">ngfw-a-2g · recurring · qty 1</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="128">svc-mon-ngfw · recurring · qty 1</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="168">checkout_session_id —</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="188">currency —</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="208">counter_scenario_id —</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="248">no amount fields</text>
+          <text fill="#0a5a46" font-family="system-ui,sans-serif" font-size="13" font-weight="700" x="744" y="52">PAYMENTS</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="744" y="84">Bill-to: p / smb / sub</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="744" y="108">draft → generated → sent</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="744" y="140">setup $1,500.00</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="744" y="160">recurring $450.00</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="744" y="180">monitoring $120.00</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="744" y="208">total $2,070.00</text>
+          <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="744" y="240">after preview only</text>
+          <text fill="#ba7517" font-family="ui-monospace,monospace" font-size="11" x="744" y="268">checkout refused</text>
+          <path stroke="#0a5a46" stroke-width="2" fill="none" d="M 316 150 L 360 150" />
+          <polygon fill="#0a5a46" points="360,150 350,145 350,155" />
+          <path stroke="#0a5a46" stroke-width="2" fill="none" d="M 670 150 L 714 150" />
+          <polygon fill="#0a5a46" points="714,150 704,145 704,155" />
+        </svg>
+        <p class="handoff-caption">Rank and seller copy stay on the commerce side. They are not part of the handoff.</p>
+        <ol class="state-flow" aria-label="Find, choose, quote, bill, sent. Capture is later.">
+          <li><span class="node on">Find</span><span class="arrow" aria-hidden="true">→</span></li>
+          <li><span class="node on">Choose</span><span class="arrow" aria-hidden="true">→</span></li>
+          <li><span class="node on">Quote</span><span class="arrow" aria-hidden="true">→</span></li>
+          <li><span class="node on">Bill</span><span class="arrow" aria-hidden="true">→</span></li>
+          <li><span class="node on">Sent</span><span class="arrow" aria-hidden="true">→</span></li>
+          <li><span class="node ghost">Capture later</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="band" id="horizons" aria-labelledby="horizons-heading">
+      <span class="kicker">Horizons</span>
+      <h2 id="horizons-heading">One tool call counts. A reasoning turn does not.</h2>
+      <p class="prose">H1 is discovery through a shortlist that passes the compatibility oracle. H2 is the invoice
+        machine through <code>sent</code>, with recon on usage. H3 is Counter checkout, documented only; see
+        <a href="adr/001-no-counter-v1.md">ADR 001</a>. Neither sim accepts <code>set_amount</code>,
+        <code>rewrite_sent</code>, <code>checkout</code>, or <code>create_payment</code>.</p>
+      <p class="diagram-label">H1 to H2. H3 dashed</p>
+      <div class="flow-diagram">
+        <pre class="diagram-box" role="img" aria-label="Horizon 1 discovery to Horizon 2 entitlements. Horizon 3 settlement is deferred.">
+┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐
+│ H1 discovery       │────▶│ H2 entitlements    │─ ─ ▶│ H3 settlement      │
+│ shortlist passes   │     │ invoice sent,      │     │ Counter sidecar,   │
+│ the oracle         │     │ recon variance 0   │     │ not v1             │
+└────────────────────┘     └────────────────────┘     └────────────────────┘
+        </pre>
+      </div>
+      <div class="situation-rows">
+        <div class="situation-row">
+          <div class="situation-case"><strong>H1</strong> Search, facets, compare, add-ons, shortlist</div>
+          <div class="situation-call">oracle pass</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case"><strong>H2</strong> Attach lines, preview, send; later a credit memo, never a rewrite</div>
+          <div class="situation-call">invoice sent</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case"><strong>H3</strong> Capture funds through Counter</div>
+          <div class="situation-call">not in v1</div>
+        </div>
+      </div>
+      <details class="glossary-details">
+        <summary>Oracle and invoice rules already in the spec</summary>
+        <div class="glossary-item">
+          <span class="glossary-term">Oracle</span>
+          Shortlist of 1–4. Appliances have to match the buyer’s deployment, throughput, HA, hypervisor, license, and
+          certs. A service only stays if its <code>compatible_with</code> hits a shortlisted appliance family. Compare
+          tables drop marketing copy. If search returned nothing, the agent has to refine before it saves.
+        </div>
+        <div class="glossary-item">
+          <span class="glossary-term">Invoice</span>
+          Draft, generated, sent. After sent, the only legal correction is a credit memo onto the next invoice. Usage
+          needs partner, SMB, and subscription ids. Preview will not promote to generated if rated cents and invoice
+          cents disagree.
+        </div>
+      </details>
+    </section>
+
+    <section class="band" id="money" aria-labelledby="money-heading">
+      <span class="kicker">Money</span>
+      <h2 id="money-heading">The agent can look at cents. It cannot type them.</h2>
+      <p class="prose"><code>attach_line</code> already rejects an agent-supplied amount. The price book is the only
+        writer of unit prices (USD on the book; the handoff currency field stays empty so Counter can own payment
+        currency later). Line types are setup, recurring, and usage. Usage does not belong on a discovery quote.</p>
+      <p class="prose">If usage is on the invoice, send is blocked until unexplained variance is zero. A credit memo
+        is a new document that points at the sent id. Editing the sent invoice in place is the illegal tool
+        <code>rewrite_sent</code>.</p>
+      <p class="diagram-label">Invoice machine</p>
+      <div class="flow-diagram">
+        <pre class="diagram-box" role="img" aria-label="Invoice states: draft to generated to sent. Sent to credit memo to next invoice. Rewrite of sent is refused.">
+  draft ──preview──▶ generated ──send──▶ sent ──memo──▶ credit_memo ──▶ next_invoice
+    ▲                    │                  │
+    └── return_to_draft ─┘                  │ rewrite_sent
+                                            ▼
+                                         refused
+
+  sent is immutable. later usage lands on next_invoice.</pre>
+      </div>
+      <p class="state-diagram-note">The spec allows return from generated to draft. The sim still only errors today. There is no <code>return_to_draft</code> tool yet.</p>
+    </section>
+
+    <section class="band" id="certifies" aria-labelledby="certifies-heading">
+      <span class="kicker">Catalog</span>
+      <h2 id="certifies-heading">Twenty-four SKUs, six scenarios, a few traps sitting unused</h2>
+      <p class="prose">The gold paths are a branch NGFW buy and a virtual VMware bundle. The catalog already has the
+        decoys a later cert will need: firewalls with no HA, a SkyFence support SKU that only fits family
+        <code>va-k</code>, and a few appliances that miss SOC2 or HA on purpose.</p>
+      <div class="situation-rows">
+        <div class="situation-row">
+          <div class="situation-case">On-prem, 2–5 Gbps, HA, three firewalls, monitoring</div>
+          <div class="situation-call">h1_branch_ngfw</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">Hybrid VMware, SOC2, threat intel and monitoring</div>
+          <div class="situation-call">h1_virtual_bundle</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">SkyFence premium on Aegis (the attach is not actually attempted yet)</div>
+          <div class="situation-call">h1_reject_incompatible_addon</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">Setup and recurring, preview, send</div>
+          <div class="situation-call">h2_preview_send</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">Usage missing smb_id, recon blocks send</div>
+          <div class="situation-call">h2_block_unattributed_usage</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">Rewrite refused; credit memo; later usage on the next invoice</div>
+          <div class="situation-call">h2_refuse_sent_rewrite</div>
+        </div>
+      </div>
+      <p class="prose" style="margin-top: 16px;">On the branch commitment the ledger shows $1,500 setup, $450
+        recurring, $120 monitoring, $2,070 total. Those numbers appear after preview. They are not on the handoff.</p>
+    </section>
+
+    <section class="band" id="example" aria-labelledby="example-heading">
+      <span class="kicker">Worked example</span>
+      <h2 id="example-heading">Branch firewall through a sent invoice</h2>
+      <p class="prose">Search for a 2 Gbps HA branch firewall, set on-prem facets, compare three NGFWs on the whitelist
+        attributes (not the marketing line), attach NGFW monitoring, save the shortlist. The curriculum then builds
+        quote lines for Aegis plus monitoring, payments attaches them, preview shows the ledger, send flips the state
+        to <code>sent</code>. Counter ids stay null.</p>
+      <p class="prose">What still needs to happen in that story: actually refuse SkyFence premium on Aegis, commit the
+        buy set separately from the compare set (three appliances plus a service saturates the size cap of four), fail
+        a quote that blows a recurring cap, and replay the three lanes so a person can see what crossed.</p>
+    </section>
+
+    <section class="band" id="roadmap" aria-labelledby="roadmap-heading">
+      <span class="kicker">Next</span>
+      <h2 id="roadmap-heading">Harden the cert before anyone talks about checkout</h2>
+      <p class="prose">First: grade each step, and make the incompatible-addon case actually attempt the attach.
+        Then put quote composition in the commerce sim and fail closed on an unpriced SKU. Then finish the invoice
+        machine (return to draft, split rating from attach, memo lines that copy ledger cents). Then the buyer task:
+        preference order, adversarial rank, sponsored overlay, a recurring cap. Then a static trace page. Counter
+        only after a new ADR.</p>
+      <p class="prose">Not in this repo: a live checkout widget, a model leaderboard, a seller bot rewriting blurbs, a
+        visual shelf, OAuth agent credentials, loyalty and address rules, internal warehouse agents, or a reward
+        mixer.</p>
+      <p class="longform-link"><a href="roadmap.md">docs/roadmap.md</a></p>
+    </section>
+
+    <section class="band" id="run" aria-labelledby="run-heading">
+      <span class="kicker">Quick start</span>
+      <h2 id="run-heading">Clone it and run the scripts</h2>
+      <div class="pre-block">
+        <pre>chmod +x scripts/*.sh
+./scripts/install.sh
+./scripts/test.sh
+./scripts/harness.sh
+./scripts/curriculum.sh
+./scripts/harness.sh --jsonl /tmp/ach-trajectories.jsonl</pre>
+      </div>
+      <p class="longform-link" style="margin-top: 16px;">
+        <a href="https://github.com/b-lavania/agentic-commerce-harness/blob/main/pattern-spec/horizons.md">horizons</a>
+        ·
+        <a href="https://github.com/b-lavania/agentic-commerce-harness/blob/main/pattern-spec/oracle.md">oracle</a>
+        ·
+        <a href="https://github.com/b-lavania/agentic-commerce-harness/blob/main/pattern-spec/invoice-machine.md">invoice machine</a>
+        ·
+        <a href="adr/001-no-counter-v1.md">ADR 001</a>
+        ·
+        <a href="insights.md">insights</a>
+      </p>
+    </section>
+
+    <footer class="footer-contact">
+      <div class="footer-contact-identity">
+        <div class="footer-contact-name">agentic-commerce-harness</div>
+        <div class="footer-contact-role">v0.1</div>
+        <p class="footer-contact-desc">Cert harness for commerce agents and payments agents.</p>
+      </div>
+      <div class="footer-contact-actions">
+        <div class="footer-contact-links">
+          <a href="https://github.com/b-lavania/agentic-commerce-harness" class="btn-cta" target="_blank"
+            rel="noopener">View on GitHub →</a>
+          <a href="https://blavania.com/" class="btn-cta-secondary" target="_blank" rel="noopener">Portfolio</a>
+          <a href="https://linkedin.com/in/blavania" class="btn-cta-secondary" target="_blank"
+            rel="noopener">LinkedIn</a>
+          <a href="https://capecon.blavania.com" class="btn-cta-secondary" target="_blank"
+            rel="noopener">CapEcon</a>
+        </div>
+        <p class="install-hint">./scripts/install.sh &amp;&amp; ./scripts/test.sh</p>
+      </div>
+    </footer>
+  </main>
+</body>
+
+</html>

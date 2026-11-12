@@ -1,5 +1,7 @@
 # agentic-commerce-harness
 
+**Overview:** [docs landing](docs/index.html) (GitHub Pages: enable Pages → `/docs`).
+
 Cert harness and in-process sims for commerce agents on **search-first marketplace discovery** (Horizon 1) and **entitlement / invoice truth** (Horizon 2).
 
 Horizon 3 (Counter settlement) is **deferred** — see [`integrations/counter/`](integrations/counter/) and [`docs/adr/001-no-counter-v1.md`](docs/adr/001-no-counter-v1.md).
