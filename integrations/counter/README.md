@@ -2,7 +2,7 @@
 
 **v1:** documentation only. No runtime dependency on [Counter](https://github.com/b-lavania/counter).
 
-The Phase 0 spike ([docs/bridge-spike.md](../../docs/bridge-spike.md)) pivoted. Counter’s seed is a cafe menu (`drip`, `latte`, `burrito`). This harness sells workspace computers. There is no shared SKU and no shared cents, so there is no ADR 002 and no HTTP client.
+The Phase 0 spike ([docs/bridge-spike.md](../../docs/bridge-spike.md)) pivoted. Counter’s seed is a cafe menu (`drip`, `latte`, `burrito`). This harness sells SaaS cloud seats. There is no shared SKU and no shared cents, so there is no ADR 002 and no HTTP client.
 
 See [docs/adr/001-no-counter-v1.md](../../docs/adr/001-no-counter-v1.md).
 

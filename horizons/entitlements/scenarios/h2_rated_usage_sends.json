@@ -3,12 +3,12 @@
   "horizon": "h2",
   "description": "Rate a batch, attach the same units, preview variance 0, send",
   "pricebook": "horizons/entitlements/pricebook/v1.json",
-  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_cloud.json",
   "max_macro_steps": 20,
   "steps": [
     {
       "action": "load_shortlist",
-      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_cloud.json" }
     },
     {
       "action": "rate_usage",

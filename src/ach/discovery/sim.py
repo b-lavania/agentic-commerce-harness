@@ -85,11 +85,11 @@ class DiscoverySim:
     def _match(self, sku: Sku, q: str, facets: dict[str, Any]) -> bool:
         tokens = [t for t in q.lower().replace(",", " ").split() if t]
         if tokens:
-            # A laptop search should not return displays or docks. Cloud/virtual skips hardware.
-            if any(t in ("laptop", "computer", "mini") for t in tokens) and sku.kind == "physical":
+            # A seat or cloud search should not return kiosk displays or docks.
+            if any(t in ("seat", "saas", "cloud", "bundle", "desktop") for t in tokens):
                 if sku.family in ("display", "dock"):
                     return False
-            if any(t in ("virtual", "cloud") for t in tokens) and sku.kind == "physical":
+            if any(t in ("cloud", "saas", "virtual") for t in tokens) and sku.kind == "physical":
                 return False
 
         for key, val in facets.items():

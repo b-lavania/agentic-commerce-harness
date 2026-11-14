@@ -28,7 +28,7 @@ Shared across H1 → H2 curriculum:
 | `shortlist` | Saved evaluation set |
 | `committed` | Ids the agent will buy. Graded when the task has preferences |
 | `quote_lines` | `{sku_id, qty, line_type}` — no agent-written amount |
-| `invoice_id` / `invoice_state` | H2 invoice machine |
+| `invoice_id` / `invoice_state` | H2 invoice bundle |
 
 ## H1 milestones
 

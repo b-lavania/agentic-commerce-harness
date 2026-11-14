@@ -3,7 +3,7 @@
 # Usage:
 #   ./scripts/harness.sh
 #   ./scripts/harness.sh --jsonl /tmp/ach-trajectories.jsonl
-#   ./scripts/harness.sh run horizons/discovery/scenarios/h1_office_laptop.json
+#   ./scripts/harness.sh run horizons/discovery/scenarios/h1_cloud_seats.json
 set -euo pipefail
 # shellcheck source=/dev/null
 source "$(cd "$(dirname "$0")" && pwd)/_common.sh"

@@ -6,15 +6,16 @@ def test_catalog_has_about_24_skus():
     assert 20 <= len(cat.skus) <= 30
 
 
-def test_catalog_has_gold_laptop_band():
+def test_catalog_has_gold_seat_band():
     cat = load_catalog()
     band = [
         s
         for s in cat.skus
-        if s.kind == "physical"
-        and s.deployment == "on_prem"
+        if s.kind == "virtual"
+        and s.deployment == "hybrid"
         and s.perf == "standard"
         and s.spare == "ready"
+        and s.os == "windows"
         and s.family in ("northline", "harbor", "fieldkit")
     ]
     assert len(band) >= 3

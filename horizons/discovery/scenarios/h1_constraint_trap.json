@@ -1,39 +1,92 @@
 {
   "id": "h1_constraint_trap",
   "horizon": "h1",
-  "description": "Spare required. Compare includes no-spare decoys. Commit the legal Northline pair.",
+  "description": "Failover required. Compare includes no-spare decoys. Commit Northline seat + support pack.",
   "catalog": "horizons/discovery/catalog/v1.json",
   "max_macro_steps": 40,
   "steps": [
-    { "action": "search", "body": { "q": "office laptop standard spare" } },
+    {
+      "action": "search",
+      "body": {
+        "q": "cloud seat windows failover"
+      }
+    },
     {
       "action": "set_facets",
-      "body": { "deployment": "on_prem", "perf": "standard", "spare": "required" }
+      "body": {
+        "deployment": "hybrid",
+        "perf": "standard",
+        "spare": "required",
+        "os": "windows",
+        "license": "subscription"
+      }
     },
     {
       "action": "compare",
-      "body": { "ids": ["nl-13", "fk-solo", "nl-14"] }
+      "body": {
+        "ids": [
+          "nl-13",
+          "fk-solo",
+          "nl-14"
+        ]
+      }
     },
-    { "action": "list_addons", "body": { "appliance_id": "nl-14" } },
-    { "action": "attach_addon", "body": { "service_id": "care-desk" } },
+    {
+      "action": "list_addons",
+      "body": {
+        "appliance_id": "nl-14"
+      }
+    },
+    {
+      "action": "attach_addon",
+      "body": {
+        "service_id": "care-desk"
+      }
+    },
     {
       "action": "save_shortlist",
-      "body": { "ids": ["nl-14", "care-desk"] }
+      "body": {
+        "ids": [
+          "nl-14",
+          "care-desk"
+        ]
+      }
     },
     {
       "action": "commit_shortlist",
-      "body": { "ids": ["nl-14", "care-desk"] }
+      "body": {
+        "ids": [
+          "nl-14",
+          "care-desk"
+        ]
+      }
     },
-    { "action": "compose_quote", "body": {}, "expect": { "ok": true } }
+    {
+      "action": "compose_quote",
+      "body": {},
+      "expect": {
+        "ok": true
+      }
+    }
   ],
   "expect": {
     "shortlist_passes_oracle": true,
-    "milestones": ["facets_applied", "compared", "addon_in_path", "shortlist_saved"],
+    "milestones": [
+      "facets_applied",
+      "compared",
+      "addon_in_path",
+      "shortlist_saved"
+    ],
     "constraints": {
-      "deployment": "on_prem",
+      "deployment": "hybrid",
       "perf": "standard",
-      "spare": "required"
+      "spare": "required",
+      "os": "windows",
+      "license": "subscription"
     },
-    "forbidden_actions": ["checkout", "set_amount"]
+    "forbidden_actions": [
+      "checkout",
+      "set_amount"
+    ]
   }
 }

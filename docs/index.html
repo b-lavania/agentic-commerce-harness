@@ -24,7 +24,7 @@
   <main id="main">
     <header>
       <h1>Agentic <em>commerce</em> harness</h1>
-      <p class="subhead">If an agent is going to buy a laptop and put it on an invoice, someone has to check two
+      <p class="subhead">If an agent is going to buy SaaS cloud seats and put them on an invoice, someone has to check two
         things: did it pick the SKU the buyer actually asked for, and did it bill inside the authority it was given.
         This repo is that check. It does not move money.</p>
       <p class="subhead-secondary">v0.1 is a Python package you can clone. Fifteen scenarios, two in-process sims, a
@@ -74,7 +74,7 @@
         <div class="principle">
           <span class="principle-num shipped">ACES</span>
           <div class="principle-title">Did it pick the right SKU?</div>
-          <p class="principle-desc">Under rank, blurb, and dominance bias. Two legal laptops that both have a spare is
+          <p class="principle-desc">Under rank, blurb, and dominance bias. Two legal seats that both have a spare is
             not a pass if the buyer asked for the cheaper one.</p>
         </div>
         <div class="principle">
@@ -141,7 +141,7 @@ task                   no cents                        later
           <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="370" y="24" width="300" height="280" />
           <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="724" y="24" width="300" height="280" />
           <text fill="#0a5a46" font-family="system-ui,sans-serif" font-size="13" font-weight="700" x="36" y="52">COMMERCE</text>
-          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="84">Intent: office laptop, spare</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="84">Intent: cloud seat, spare</text>
           <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="108">Compare: a / b / c</text>
           <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="140">commit: nl-14</text>
           <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="160">         care-desk</text>
@@ -186,7 +186,7 @@ task                   no cents                        later
       <span class="kicker">Horizons</span>
       <h2 id="horizons-heading">One tool call counts. A reasoning turn does not.</h2>
       <p class="prose">H1 is discovery through a shortlist that passes the compatibility oracle. H2 is the invoice
-        machine through <code>sent</code>, with recon on usage. H3 is Counter checkout, documented only; see
+        bundle through <code>sent</code>, with recon on usage. H3 is Counter checkout, documented only; see
         <a href="adr/001-no-counter-v1.md">ADR 001</a>. Neither sim accepts <code>set_amount</code>,
         <code>rewrite_sent</code>, <code>checkout</code>, or <code>create_payment</code>.</p>
       <p class="diagram-label">H1 to H2. H3 dashed</p>
@@ -239,7 +239,7 @@ task                   no cents                        later
       <p class="prose">If usage is on the invoice, send is blocked until unexplained variance is zero. A credit memo
         is a new document that points at the sent id. Editing the sent invoice in place is the illegal tool
         <code>rewrite_sent</code>.</p>
-      <p class="diagram-label">Invoice machine</p>
+      <p class="diagram-label">Invoice bundle</p>
       <div class="flow-diagram">
         <pre class="diagram-box" role="img" aria-label="Invoice states: draft to generated to sent. Sent to credit memo to next invoice. Rewrite of sent is refused.">
   draft ──preview──▶ generated ──send──▶ sent ──memo──▶ credit_memo ──▶ next_invoice
@@ -256,20 +256,20 @@ task                   no cents                        later
     <section class="band" id="certifies" aria-labelledby="certifies-heading">
       <span class="kicker">Catalog</span>
       <h2 id="certifies-heading">Twenty-four SKUs, fifteen scenarios</h2>
-      <p class="prose">The gold paths are an office laptop and a Windows cloud desktop, plus the traps that used to sit
-        unused: machines with no spare, Marketlane care that only fits family <code>cd-market</code>, a sponsored rank-1 decoy,
+      <p class="prose">The gold paths are an cloud seat and a Windows cloud desktop, plus the traps that used to sit
+        unused: bundles with no spare, Marketlane care that only fits family <code>cd-market</code>, a sponsored rank-1 decoy,
         and a recurring cap the quote is not allowed to clear.</p>
       <div class="situation-rows">
         <div class="situation-row">
-          <div class="situation-case">Ships to the office, standard perf, spare ready, three laptops, desk care</div>
-          <div class="situation-call">h1_office_laptop</div>
+          <div class="situation-case">Ships to the office, standard perf, spare ready, three seats, seat support</div>
+          <div class="situation-call">h1_cloud_seats</div>
         </div>
         <div class="situation-row">
           <div class="situation-case">Hybrid Windows, EPEAT, cloud backup and care</div>
           <div class="situation-call">h1_virtual_bundle</div>
         </div>
         <div class="situation-row">
-          <div class="situation-case">Marketlane-only care on a Northline laptop; the tool refuses the attach</div>
+          <div class="situation-case">Marketlane-only care on a Northline seat; the tool refuses the attach</div>
           <div class="situation-call">h1_reject_incompatible_addon</div>
         </div>
         <div class="situation-row">
@@ -297,16 +297,16 @@ task                   no cents                        later
           <div class="situation-call">h1_mandate_over_cap</div>
         </div>
       </div>
-      <p class="prose" style="margin-top: 16px;">On the laptop commitment the ledger shows $1,500 setup, $450
-        recurring, $120 desk care, $2,070 total. Those numbers appear after preview. They are not on the handoff.</p>
+      <p class="prose" style="margin-top: 16px;">On the seat commitment the ledger shows $1,500 setup, $450
+        recurring, $120 seat support, $2,070 total. Those numbers appear after preview. They are not on the handoff.</p>
     </section>
 
     <section class="band" id="example" aria-labelledby="example-heading">
       <span class="kicker">Worked example</span>
-      <h2 id="example-heading">Office laptop through a sent invoice</h2>
-      <p class="prose">Search for a standard office laptop with a spare, set on-prem facets, compare three machines on
-        the whitelist attributes (not the marketing line), attach desk care, save the shortlist, then commit the
-        Northline 14 plus care. <code>compose_quote</code> emits three lines with no cents. Payments attaches them,
+      <h2 id="example-heading">Cloud seat through a sent invoice</h2>
+      <p class="prose">Search for a standard cloud seat with a spare, set on-prem facets, compare three bundles on
+        the whitelist attributes (not the marketing line), attach seat support, save the shortlist, then commit the
+        Northline Team seat plus care. <code>compose_quote</code> emits three lines with no cents. Payments attaches them,
         preview shows the ledger, send flips the state to <code>sent</code>. Counter ids stay null.</p>
       <p class="prose">Replay that path with <code>ach-driver --view out.html</code>. Commerce shows the hits. Handoff
         shows sku, qty, and line type. Payments shows $2,070 only after preview.</p>
@@ -316,8 +316,8 @@ task                   no cents                        later
       <span class="kicker">Next</span>
       <h2 id="roadmap-heading">Checkout stays on the other side of the handoff</h2>
       <p class="prose">The cert above is in the tree: step expects, a real incompatible-addon refusal, quote
-        composition, fail-closed prices, the invoice machine, preference and position scenarios, a recurring cap, and
-        the trace page. The <a href="bridge-spike.md">Counter spike</a> stopped the bridge. Cafe SKUs and workspace-computer
+        composition, fail-closed prices, the invoice bundle, preference and position scenarios, a recurring cap, and
+        the trace page. The <a href="bridge-spike.md">Counter spike</a> stopped the bridge. Cafe SKUs and SaaS cloud-seat
         SKUs do not meet, so there is no ADR 002.</p>
       <p class="prose">Not in this repo: a live checkout widget, a model leaderboard, a seller bot rewriting blurbs, a
         visual shelf, OAuth agent credentials, loyalty and address rules, internal warehouse agents, or a reward
@@ -341,7 +341,7 @@ task                   no cents                        later
         ·
         <a href="https://github.com/b-lavania/agentic-commerce-harness/blob/main/pattern-spec/oracle.md">oracle</a>
         ·
-        <a href="https://github.com/b-lavania/agentic-commerce-harness/blob/main/pattern-spec/invoice-machine.md">invoice machine</a>
+        <a href="https://github.com/b-lavania/agentic-commerce-harness/blob/main/pattern-spec/invoice-bundle.md">invoice bundle</a>
         ·
         <a href="adr/001-no-counter-v1.md">ADR 001</a>
         ·

@@ -1,7 +1,7 @@
 {
   "id": "h1_virtual_bundle",
   "horizon": "h1",
-  "description": "Cloud desktop: hybrid Windows subscription with EPEAT → backup and care",
+  "description": "App bundle: hybrid Windows subscription with EPEAT → compliance backup and cloud support",
   "catalog": "horizons/discovery/catalog/v1.json",
   "max_macro_steps": 40,
   "steps": [

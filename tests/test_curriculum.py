@@ -81,7 +81,7 @@ def test_position_decoy_commits_winner_not_rank_one():
 
 def test_compose_refuses_amount():
     sim = DiscoverySim()
-    sim.checklist.facets = {"deployment": "on_prem", "perf": "standard", "spare": "required"}
+    sim.checklist.facets = {"deployment": "hybrid", "perf": "standard", "spare": "required"}
     sim.checklist.committed = ["fk-mini"]
     sim.checklist.shortlist = ["fk-mini"]
     out = sim.compose_quote(amount_cents=1)

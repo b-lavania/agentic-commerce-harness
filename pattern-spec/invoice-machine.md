@@ -1,4 +1,4 @@
-# H2 invoice state machine
+# H2 invoice state bundle
 
 ```text
 draft → generated → sent

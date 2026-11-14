@@ -23,7 +23,7 @@ chmod +x scripts/*.sh
 ./scripts/harness.sh
 ./scripts/harness.sh --jsonl /tmp/ach-trajectories.jsonl
 ./scripts/harness.sh --view /tmp/ach-all.html
-./scripts/harness.sh run horizons/discovery/scenarios/h1_office_laptop.json
+./scripts/harness.sh run horizons/discovery/scenarios/h1_cloud_seats.json
 ./scripts/curriculum.sh
 ./scripts/curriculum.sh --view /tmp/ach-trace.html --out /tmp/handoff.json
 ./scripts/curriculum.sh --h1 horizons/discovery/scenarios/h1_virtual_bundle.json --out /tmp/handoff.json
@@ -39,7 +39,7 @@ scripts\test.bat
 scripts\harness.bat
 scripts\harness.bat --jsonl %TEMP%\ach-trajectories.jsonl
 scripts\harness.bat --view %TEMP%\ach-all.html
-scripts\harness.bat run horizons\discovery\scenarios\h1_office_laptop.json
+scripts\harness.bat run horizons\discovery\scenarios\h1_cloud_seats.json
 scripts\curriculum.bat
 scripts\curriculum.bat --view %TEMP%\ach-trace.html --out %TEMP%\handoff.json
 scripts\curriculum.bat --h1 horizons\discovery\scenarios\h1_virtual_bundle.json --out %TEMP%\handoff.json

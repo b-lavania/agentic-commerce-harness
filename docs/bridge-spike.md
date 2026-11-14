@@ -8,21 +8,21 @@ Checked 13 Nov 2026 against `/home/bl/Documents/GitHub/counter` (`src/store/seed
 
 | | Harness | Counter |
 |---|---|---|
-| What it sells | Workspace computers: laptops, mini PCs, cloud desktops, care, backup | Cafe: drip coffee, latte, breakfast burrito |
+| What it sells | SaaS cloud seats: app bundles, virtual desks, support, backup, compliance | Cafe: drip coffee, latte, breakfast burrito |
 | Example ids | `nl-14`, `care-desk` | `drip`, `latte`, `burrito` |
 | Example cents | `nl-14` setup 150000, recurring 45000; `care-desk` recurring 12000 | `drip` 300, `latte` 450, `burrito` 900 |
 | Shared SKUs | none | none |
 
-Office-laptop commitment on the harness ledger, after preview: setup $1,500 + laptop recurring $450 + desk care $120 = **$2,070**. That total is not a Counter ticket. Mapping the three quote lines onto `drip` would be an invented catalog. A shared micro-catalog package is not worth building.
+Office-seat commitment on the harness ledger, after preview: setup $1,500 + seat recurring $450 + seat support $120 = **$2,070**. That total is not a Counter ticket. Mapping the three quote lines onto `drip` would be an invented catalog. A shared micro-catalog package is not worth building.
 
 ## Demo script (the one we are not filming)
 
 Actors: `BuyerOrg` runs the cert. `CommerceAgent` and `PaymentsAgent` are the two in-process sims. `CounterStore` is a sibling point-of-sale. It does not approve the agent and it does not host the coordinator. That is the BYOA shape: the buyer’s software calls open tools under a written mandate.
 
-1. Commerce: search, facets, compare, attach desk care, save the compare set, **commit** `nl-14` + `care-desk`, `compose_quote`.
+1. Commerce: search, facets, compare, attach seat support, save the compare set, **commit** `nl-14` + `care-desk`, `compose_quote`.
 2. Handoff: three lines, sku / qty / line type only. `checkout_session_id`, `currency`, and `counter_scenario_id` stay null.
 3. Payments: load with bill-to `p-100` / `smb-9` / `sub-77`, attach, preview, send. State `sent`. Ledger shows $2,070. No card capture.
-4. Stop. Calling Counter here would open a cafe checkout for a laptop quote.
+4. Stop. Calling Counter here would open a cafe checkout for a seat quote.
 
 **Capture vs bill.** `sent` is a legal bill. Capture is a Counter ticket/session with a fake PSP, and only after a real shared catalog exists. Calling Counter after `sent` (stronger) or after quote (faster) both require that catalog. We do not have it.
 

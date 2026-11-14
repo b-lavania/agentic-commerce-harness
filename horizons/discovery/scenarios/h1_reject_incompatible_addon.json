@@ -1,45 +1,100 @@
 {
   "id": "h1_reject_incompatible_addon",
   "horizon": "h1",
-  "description": "Attach Marketlane-only premium care to a Northline laptop; the tool refuses, and a shortlist that still includes it fails the oracle",
+  "description": "Attach Marketlane-only premium care to a Northline seat; the tool refuses, and a shortlist that still includes it fails the oracle",
   "catalog": "horizons/discovery/catalog/v1.json",
   "max_macro_steps": 40,
   "steps": [
-    { "action": "search", "body": { "q": "office laptop standard spare" } },
+    {
+      "action": "search",
+      "body": {
+        "q": "cloud seat windows failover"
+      }
+    },
     {
       "action": "set_facets",
-      "body": { "deployment": "on_prem", "perf": "standard", "spare": "required" }
+      "body": {
+        "deployment": "hybrid",
+        "perf": "standard",
+        "spare": "required",
+        "os": "windows",
+        "license": "subscription"
+      }
     },
-    { "action": "compare", "body": { "ids": ["nl-14", "hb-16"] } },
-    { "action": "list_addons", "body": { "appliance_id": "nl-14" } },
+    {
+      "action": "compare",
+      "body": {
+        "ids": [
+          "nl-14",
+          "hb-16"
+        ]
+      }
+    },
+    {
+      "action": "list_addons",
+      "body": {
+        "appliance_id": "nl-14"
+      }
+    },
     {
       "action": "attach_addon",
-      "body": { "service_id": "care-market" },
-      "expect": { "ok": false, "error": "incompatible" }
+      "body": {
+        "service_id": "care-market"
+      },
+      "expect": {
+        "ok": false,
+        "error": "incompatible"
+      }
     },
     {
       "action": "save_shortlist",
-      "body": { "ids": ["nl-14", "care-market"] },
-      "expect": { "ok": false, "oracle_pass": false }
+      "body": {
+        "ids": [
+          "nl-14",
+          "care-market"
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "oracle_pass": false
+      }
     },
     {
       "action": "commit_shortlist",
-      "body": { "ids": ["nl-14", "care-market"] }
+      "body": {
+        "ids": [
+          "nl-14",
+          "care-market"
+        ]
+      }
     },
     {
       "action": "compose_quote",
       "body": {},
-      "expect": { "ok": false, "error": "oracle_failed" }
+      "expect": {
+        "ok": false,
+        "error": "oracle_failed"
+      }
     }
   ],
   "expect": {
     "shortlist_passes_oracle": false,
-    "milestones": ["facets_applied", "compared", "addon_in_path", "shortlist_saved"],
+    "milestones": [
+      "facets_applied",
+      "compared",
+      "addon_in_path",
+      "shortlist_saved"
+    ],
     "constraints": {
-      "deployment": "on_prem",
+      "deployment": "hybrid",
       "perf": "standard",
-      "spare": "required"
+      "spare": "required",
+      "os": "windows",
+      "license": "subscription"
     },
-    "forbidden_actions": ["checkout", "set_amount"]
+    "forbidden_actions": [
+      "checkout",
+      "set_amount"
+    ]
   }
 }

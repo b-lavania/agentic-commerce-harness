@@ -5,40 +5,100 @@
   "catalog": "horizons/discovery/catalog/v1.json",
   "max_macro_steps": 40,
   "task": {
-    "intent": "office laptop standard spare",
-    "constraints": { "deployment": "on_prem", "perf": "standard", "spare": "required" },
-    "preferences": [{ "minimize_recurring": true }],
-    "result_order": ["nl-14", "hb-16", "fk-mini"],
-    "listing_overlays": [{ "sku_id": "nl-14", "sponsored": true, "platform_pick": true }]
+    "intent": "cloud seat windows failover",
+    "constraints": {
+      "deployment": "hybrid",
+      "perf": "standard",
+      "spare": "required",
+      "os": "windows",
+      "license": "subscription"
+    },
+    "preferences": [
+      {
+        "minimize_recurring": true
+      }
+    ],
+    "result_order": [
+      "nl-14",
+      "hb-16",
+      "fk-mini"
+    ],
+    "listing_overlays": [
+      {
+        "sku_id": "nl-14",
+        "sponsored": true,
+        "platform_pick": true
+      }
+    ]
   },
   "steps": [
-    { "action": "search", "body": { "q": "office laptop standard spare" } },
+    {
+      "action": "search",
+      "body": {
+        "q": "cloud seat windows failover"
+      }
+    },
     {
       "action": "set_facets",
-      "body": { "deployment": "on_prem", "perf": "standard", "spare": "required" }
+      "body": {
+        "deployment": "hybrid",
+        "perf": "standard",
+        "spare": "required",
+        "os": "windows",
+        "license": "subscription"
+      }
     },
     {
       "action": "compare",
-      "body": { "ids": ["nl-14", "hb-16", "fk-mini"] }
+      "body": {
+        "ids": [
+          "nl-14",
+          "hb-16",
+          "fk-mini"
+        ]
+      }
     },
     {
       "action": "commit_shortlist",
-      "body": { "ids": ["fk-mini"] }
+      "body": {
+        "ids": [
+          "fk-mini"
+        ]
+      }
     },
     {
       "action": "save_shortlist",
-      "body": { "ids": ["fk-mini"] }
+      "body": {
+        "ids": [
+          "fk-mini"
+        ]
+      }
     },
-    { "action": "compose_quote", "body": {}, "expect": { "ok": true } }
+    {
+      "action": "compose_quote",
+      "body": {},
+      "expect": {
+        "ok": true
+      }
+    }
   ],
   "expect": {
     "shortlist_passes_oracle": true,
-    "milestones": ["facets_applied", "compared", "shortlist_saved"],
+    "milestones": [
+      "facets_applied",
+      "compared",
+      "shortlist_saved"
+    ],
     "constraints": {
-      "deployment": "on_prem",
+      "deployment": "hybrid",
       "perf": "standard",
-      "spare": "required"
+      "spare": "required",
+      "os": "windows",
+      "license": "subscription"
     },
-    "forbidden_actions": ["checkout", "set_amount"]
+    "forbidden_actions": [
+      "checkout",
+      "set_amount"
+    ]
   }
 }

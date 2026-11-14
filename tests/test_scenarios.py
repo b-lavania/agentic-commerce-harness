@@ -9,8 +9,8 @@ def test_all_scenarios_pass():
     assert len(results) == 15
 
 
-def test_h1_office_laptop(tmp_path):
-    r = run_scenario(H1_SCENARIOS / "h1_office_laptop.json")
+def test_h1_cloud_seats(tmp_path):
+    r = run_scenario(H1_SCENARIOS / "h1_cloud_seats.json")
     assert r.passed, r.failures
 
 

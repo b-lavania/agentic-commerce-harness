@@ -116,7 +116,7 @@ def _trace_step(
 
 
 def run_curriculum(h1_scenario_path: Path | str | None = None) -> dict:
-    path = Path(h1_scenario_path) if h1_scenario_path else H1_SCENARIOS / "h1_office_laptop.json"
+    path = Path(h1_scenario_path) if h1_scenario_path else H1_SCENARIOS / "h1_cloud_seats.json"
     scenario = load_scenario(path)
     h1_result = run_h1(scenario)
     if not h1_result.passed:
@@ -241,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ach-driver")
     parser.add_argument(
         "--h1",
-        default=str(H1_SCENARIOS / "h1_office_laptop.json"),
+        default=str(H1_SCENARIOS / "h1_cloud_seats.json"),
         help="H1 scenario path to seed the curriculum",
     )
     parser.add_argument("--out", default=None, help="Write handoff JSON")

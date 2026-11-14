@@ -15,7 +15,7 @@ buyer task → commerce → quote (no cents) → payments → sent
 
 ## What a passing run is
 
-v0.1 at [`src/ach/`](src/ach) replays **fifteen** gold JSON scenarios and, on the office-laptop curriculum, stops at `invoice_state: sent`. A pass means the script’s `steps[]` matched the sim **and** any per-step `expect` held. It does **not** mean a model chose those tools.
+v0.1 at [`src/ach/`](src/ach) replays **fifteen** gold JSON scenarios and, on the cloud-seat curriculum, stops at `invoice_state: sent`. A pass means the script’s `steps[]` matched the sim **and** any per-step `expect` held. It does **not** mean a model chose those tools.
 
 The runner is `ScriptedPolicy`: `next_action(observation) → {action, body}`. Today the policy yields the scenario file. The observation is a redacted checklist (intent, facets, compare ids, shortlist, quote lines, invoice id/state, milestones). Writable amounts are stripped. A later model can sit behind the same seam without changing the grader.
 
@@ -29,10 +29,10 @@ There is no MCP server and no model client. JSONL plus `--view` are the audit tr
 
 ```bash
 ./scripts/harness.sh
-./scripts/harness.sh run horizons/discovery/scenarios/h1_office_laptop.json
+./scripts/harness.sh run horizons/discovery/scenarios/h1_cloud_seats.json
 ```
 
-4. Walk the office laptop buy from quote through a sent invoice:
+4. Walk the cloud seat buy from quote through a sent invoice:
 
 ```bash
 ./scripts/curriculum.sh --view /tmp/ach-trace.html --out /tmp/handoff.json
@@ -57,9 +57,9 @@ Shopping and checkout are the wrong unit. An agent can already change which SKU 
 |--|-----|----------|-----------|
 | **Commerce** | Buyer task → compatible shortlist → quote | Handoff `quote_lines` (sku, qty, line type; no amounts) | No `set_amount`, no checkout |
 | **Payments** | Quote → invoice → send | `invoice_state: sent` | Ledger owns cents; no `rewrite_sent` |
-| **Settlement** | Capture funds | Parked | Cafe catalog ≠ workspace-computer catalog ([spike](docs/bridge-spike.md)) |
+| **Settlement** | Capture funds | Parked | Cafe catalog ≠ SaaS cloud-seat catalog ([spike](docs/bridge-spike.md)) |
 
-**ACES** ([What Is Your AI Agent Buying?](https://arxiv.org/abs/2508.02630); [MBI](https://www.mbi-deepdives.com/the-promise-and-pitfall-of-agentic-commerce/)): did it pick the right SKU under rank, blurb, and dominance? Two legal laptops that both have a spare is not a pass if the buyer asked for the cheaper one.
+**ACES** ([What Is Your AI Agent Buying?](https://arxiv.org/abs/2508.02630); [MBI](https://www.mbi-deepdives.com/the-promise-and-pitfall-of-agentic-commerce/)): did it pick the right SKU under rank, blurb, and dominance? Two legal seats that both have a spare is not a pass if the buyer asked for the cheaper one.
 
 **Ping** ([Agentic Commerce in 2027](https://www.pingidentity.com/en-us/docs/blogs/agentic-commerce-2027-retail-agency)): bounded agency — caps, preview, know whom the agent represents, audit. Checkout without that is an unsigned payment.
 
@@ -79,7 +79,7 @@ Shopping and checkout are the wrong unit. An agent can already change which SKU 
 | Approved purchase | `preview_invoice`, `request_send` | Read ledger totals | `checkout` / `create_payment` forbidden; send only from `generated` |
 | After purchase | `propose_credit_memo`, `rate_usage` then `attach_line` usage | Memo, not rewrite | `rewrite_sent` forbidden |
 
-Invoice machine: `draft → generated → sent`, then `credit_memo → next_invoice`. `return_to_draft` is the only legal way back from `generated`. Editing a sent invoice in place is illegal.
+Invoice bundle: `draft → generated → sent`, then `credit_memo → next_invoice`. `return_to_draft` is the only legal way back from `generated`. Editing a sent invoice in place is illegal.
 
 **Commerce** ([`src/ach/discovery/sim.py`](src/ach/discovery/sim.py)) turns a buyer `task` into a shortlist and a quote. It does not price and it does not pay.
 
@@ -96,13 +96,13 @@ Invoice machine: `draft → generated → sent`, then `credit_memo → next_invo
 
 Handoff ([`pattern-spec/handoff-schema.json`](pattern-spec/handoff-schema.json)): `shortlist_ids` plus `quote_lines[{sku_id, qty, line_type}]`. Amounts absent. `checkout_session_id`, `currency`, `counter_scenario_id` stay null.
 
-## Worked example — office laptop
+## Worked example — cloud seat
 
 Catalog: [`horizons/discovery/catalog/v1.json`](horizons/discovery/catalog/v1.json) (24 SKUs). Price book: [`horizons/entitlements/pricebook/v1.json`](horizons/entitlements/pricebook/v1.json).
 
-Happy path (`h1_office_laptop` → curriculum):
+Happy path (`h1_cloud_seats` → curriculum):
 
-`search` → `set_facets` (ships to the office, standard perf, spare ready) → `compare` `nl-14` / `hb-16` / `fk-mini` → `list_addons` → `attach_addon` `care-desk` → `save_shortlist` (four ids) → `commit_shortlist` (`nl-14` + `care-desk`) → `compose_quote` → `load_shortlist` with bill-to → `attach_line` × 3 → `preview_invoice` → `request_send`.
+`search` → `set_facets` (hybrid, Windows, subscription, standard perf, failover ready) → `compare` `nl-14` / `hb-16` / `fk-mini` → `list_addons` → `attach_addon` `care-desk` → `save_shortlist` (four ids) → `commit_shortlist` (`nl-14` + `care-desk`) → `compose_quote` → `load_shortlist` with bill-to → `attach_line` × 3 → `preview_invoice` → `request_send`.
 
 Compare set and buy set differ on purpose: three appliances plus a service saturates the shortlist cap of four. The commit is the pair that actually bills.
 
@@ -121,13 +121,13 @@ H1 under [`horizons/discovery/scenarios/`](horizons/discovery/scenarios/):
 
 | Id | What the gold path does |
 |----|-------------------------|
-| `h1_office_laptop` | Compare three standard laptops, commit Northline 14 + desk care, quote |
-| `h1_virtual_bundle` | Hybrid Windows EPEAT cloud desks with backup and care |
-| `h1_reject_incompatible_addon` | Calls `attach_addon` on Marketlane-only care vs a Northline laptop; tool returns `incompatible`; a shortlist that still includes it fails the oracle |
+| `h1_cloud_seats` | Compare three standard seats, commit Northline Team seat + seat support, quote |
+| `h1_virtual_bundle` | Hybrid Windows EPEAT app bundles with compliance backup and cloud support |
+| `h1_reject_incompatible_addon` | Calls `attach_addon` on Marketlane-only care vs a Northline seat; tool returns `incompatible`; a shortlist that still includes it fails the oracle |
 | `h1_constraint_trap` | Compare includes no-spare decoys (`nl-13`, `fk-solo`); commit the legal pair |
 | `h1_position_decoy` | `result_order` puts sponsored `nl-14` at rank 1; gold commits cheaper `fk-mini` |
-| `h1_ledger_tiebreak` | `minimize_recurring` among standard spare-ready machines: 45000 / 52000 / **38000** → commit `fk-mini` |
-| `h1_mandate_over_cap` | Same laptop quote, cap 10000 cents; `compose_quote` refuses; the cert **passes** |
+| `h1_ledger_tiebreak` | `minimize_recurring` among standard spare-ready bundles: 45000 / 52000 / **38000** → commit `fk-mini` |
+| `h1_mandate_over_cap` | Same seat quote, cap 10000 cents; `compose_quote` refuses; the cert **passes** |
 
 H2 under [`horizons/entitlements/scenarios/`](horizons/entitlements/scenarios/):
 
@@ -146,7 +146,7 @@ Traps already in the catalog: `nl-13` and `fk-solo` (no spare), `care-market` (`
 
 ## Counter (parked)
 
-[Counter](https://github.com/b-lavania/counter) is a restaurant POS (`drip`, `latte`, `burrito`). This catalog is workspace computers sold online: laptops, mini PCs, cloud desktops, care, and backup. There is no shared SKU and no shared cents, so there is no HTTP client and no ADR 002.
+[Counter](https://github.com/b-lavania/counter) is a restaurant POS (`drip`, `latte`, `burrito`). This catalog is SaaS cloud seats: virtual desks, app bundles, support, backup, and compliance packs. There is no shared SKU and no shared cents, so there is no HTTP client and no ADR 002.
 
 That is an honest **dual ledger**: the harness price book is the B2B bill; Counter’s seed is a cafe ticket. The bill-to triple does not map onto a Counter buyer cap.
 
@@ -176,7 +176,7 @@ After install, the same CLIs exist as `ach-harness` and `ach-driver`.
 ## Layout
 
 ```text
-pattern-spec/          # schemas, oracle rules, invoice machine, handoff
+pattern-spec/          # schemas, oracle rules, invoice bundle, handoff
 horizons/              # catalog seed, 15 scenarios, price book, fixtures
 src/ach/               # discovery + entitlements sims, ScriptedPolicy runner, H1→H2 driver, --view
 harness/               # thin CLI pointer
@@ -198,4 +198,4 @@ Scenario envelope matches Counter (`id`, `steps`, `expect`) with commerce action
 
 ## Specs
 
-[horizons](pattern-spec/horizons.md) · [oracle](pattern-spec/oracle.md) · [invoice machine](pattern-spec/invoice-machine.md) · [handoff](pattern-spec/handoff-schema.json) · [ADR 001](docs/adr/001-no-counter-v1.md) · [bridge spike](docs/bridge-spike.md)
+[horizons](pattern-spec/horizons.md) · [oracle](pattern-spec/oracle.md) · [invoice bundle](pattern-spec/invoice-bundle.md) · [handoff](pattern-spec/handoff-schema.json) · [ADR 001](docs/adr/001-no-counter-v1.md) · [bridge spike](docs/bridge-spike.md)
