@@ -24,10 +24,10 @@
   <main id="main">
     <header>
       <h1>Agentic <em>commerce</em> harness</h1>
-      <p class="subhead">If an agent is going to buy a firewall and put it on an invoice, someone has to check two
+      <p class="subhead">If an agent is going to buy a laptop and put it on an invoice, someone has to check two
         things: did it pick the SKU the buyer actually asked for, and did it bill inside the authority it was given.
         This repo is that check. It does not move money.</p>
-      <p class="subhead-secondary">v0.1 is a Python package you can clone. Six scenarios, two in-process sims, a
+      <p class="subhead-secondary">v0.1 is a Python package you can clone. Fifteen scenarios, two in-process sims, a
         curriculum that stops once the invoice is <code>sent</code>. Run
         <code>./scripts/test.sh</code>.</p>
       <div class="hero-actions">
@@ -74,8 +74,8 @@
         <div class="principle">
           <span class="principle-num shipped">ACES</span>
           <div class="principle-title">Did it pick the right SKU?</div>
-          <p class="principle-desc">Under rank, blurb, and dominance bias. Two legal firewalls both matching HA is not
-            a pass if the buyer asked for the cheaper one.</p>
+          <p class="principle-desc">Under rank, blurb, and dominance bias. Two legal laptops that both have a spare is
+            not a pass if the buyer asked for the cheaper one.</p>
         </div>
         <div class="principle">
           <span class="principle-num shipped">Ping</span>
@@ -91,8 +91,9 @@
         </div>
       </div>
       <p class="prose" style="margin-top: 16px;">That is why the harness splits a commerce agent from a payments agent,
-        and why settlement (Counter, cards, ACP) is a later sidecar. You can certify a quote and a bill without
-        standing up Stripe. You cannot certify a checkout if the quote was already wrong.</p>
+        and why settlement stays outside this cert. You can certify a quote and a bill without standing up Stripe.
+        You cannot certify a checkout if the quote was already wrong. The catalog spike found no shared SKU with
+        Counter, so the dashed arrow stays empty.</p>
       <p class="diagram-label">Pipeline</p>
       <div class="flow-diagram">
         <pre class="diagram-box" role="img" aria-label="Buyer task to commerce to quote to payments to sent. Counter is later. Ledger owns cents.">
@@ -113,12 +114,11 @@ task                   no cents                        later
       <p class="prose">Be honest about the current cert. The runner walks <code>steps[]</code> from a JSON file. If
         those steps match the sim, the scenario passes. That is useful as a regression suite. It is not proof that an
         agent would have chosen those tools. There is no model client here, and no MCP server.</p>
-      <p class="prose">A few holes make that even softer. The “reject incompatible add-on” scenario never calls
-        <code>attach_addon</code> on SkyFence premium; the runner special-cases the id. <code>attach_addon</code>
-        itself will take any service. Per-step <code>expect</code> sits on the model unused. The invoice spec says you
-        can return a generated invoice to draft; the sim only errors. The curriculum skips quote lines that are missing
-        from the price book instead of failing. <code>rate_usage</code> rates a batch and attaches the line in one
-        call, so nobody reconciles two numbers.</p>
+      <p class="prose">The script is graded, not just replayed. Each step can carry <code>expect</code>.
+        <code>attach_addon</code> refuses a service whose family was not selected.
+        <code>h1_reject_incompatible_addon</code> calls that tool on Marketlane-only care and the refusal is the pass.
+        <code>return_to_draft</code> is a real tool. A missing price-book row fails the quote. <code>rate_usage</code>
+        rates a batch and stops; the agent attaches the usage line itself.</p>
       <p class="prose">JSONL export is real: hashes, milestones, forbidden hits. Treat it as the start of an audit
         log, not a training set.</p>
     </section>
@@ -129,9 +129,10 @@ task                   no cents                        later
       <p class="prose">Commerce searches, filters, compares, and saves a shortlist. Payments loads that shortlist,
         attaches lines from the price book, previews, and sends. What moves between them is sku, quantity, and line
         type. No cents. The three Counter fields on the handoff stay empty on purpose.</p>
-      <p class="prose">Today the curriculum still invents those quote lines after discovery (appliance → setup plus
-        recurring, service → recurring). That heuristic should live in the commerce sim as a quote tool, and a missing
-        price-book row should fail the run. Until then, the picture below is the contract we already have.</p>
+      <p class="prose"><code>compose_quote</code> writes those lines: an appliance becomes setup plus recurring, a
+        service becomes recurring, and a missing price-book row fails the run. The picture below is that contract.
+        Counter fields stay empty. The <a href="bridge-spike.md">catalog spike</a> said not to invent a cafe SKU to fill
+        them.</p>
       <div class="handoff-card">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 340" role="img" aria-labelledby="handoff-title handoff-desc">
           <title id="handoff-title">Commerce to handoff to payments</title>
@@ -140,17 +141,17 @@ task                   no cents                        later
           <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="370" y="24" width="300" height="280" />
           <rect fill="#ffffff" stroke="#e8eaed" stroke-width="2" x="724" y="24" width="300" height="280" />
           <text fill="#0a5a46" font-family="system-ui,sans-serif" font-size="13" font-weight="700" x="36" y="52">COMMERCE</text>
-          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="84">Intent: branch firewall, HA</text>
+          <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="84">Intent: office laptop, spare</text>
           <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="108">Compare: a / b / c</text>
-          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="140">commit: ngfw-a-2g</text>
-          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="160">         svc-mon-ngfw</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="140">commit: nl-14</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="36" y="160">         care-desk</text>
           <text fill="#3a3f45" font-family="system-ui,sans-serif" font-size="13" x="36" y="192">Oracle: pass</text>
           <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="36" y="228">rank / sponsored / blurb</text>
           <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="36" y="248">does not cross</text>
           <text fill="#0a5a46" font-family="system-ui,sans-serif" font-size="13" font-weight="700" x="390" y="52">HANDOFF</text>
-          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="88">ngfw-a-2g · setup · qty 1</text>
-          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="108">ngfw-a-2g · recurring · qty 1</text>
-          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="128">svc-mon-ngfw · recurring · qty 1</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="88">nl-14 · setup · qty 1</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="108">nl-14 · recurring · qty 1</text>
+          <text fill="#0f1112" font-family="ui-monospace,monospace" font-size="12" x="390" y="128">care-desk · recurring · qty 1</text>
           <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="168">checkout_session_id —</text>
           <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="188">currency —</text>
           <text fill="#8b92a0" font-family="ui-monospace,monospace" font-size="11" x="390" y="208">counter_scenario_id —</text>
@@ -216,7 +217,7 @@ task                   no cents                        later
         <summary>Oracle and invoice rules already in the spec</summary>
         <div class="glossary-item">
           <span class="glossary-term">Oracle</span>
-          Shortlist of 1–4. Appliances have to match the buyer’s deployment, throughput, HA, hypervisor, license, and
+          Shortlist of 1–4. Appliances have to match the buyer’s deployment, perf, spare, os, license, and
           certs. A service only stays if its <code>compatible_with</code> hits a shortlisted appliance family. Compare
           tables drop marketing copy. If search returned nothing, the agent has to refine before it saves.
         </div>
@@ -249,26 +250,26 @@ task                   no cents                        later
 
   sent is immutable. later usage lands on next_invoice.</pre>
       </div>
-      <p class="state-diagram-note">The spec allows return from generated to draft. The sim still only errors today. There is no <code>return_to_draft</code> tool yet.</p>
+      <p class="state-diagram-note"><code>return_to_draft</code> moves <code>generated</code> back to <code>draft</code> and clears the preview milestone. Editing a line while the invoice is generated is refused until that return.</p>
     </section>
 
     <section class="band" id="certifies" aria-labelledby="certifies-heading">
       <span class="kicker">Catalog</span>
-      <h2 id="certifies-heading">Twenty-four SKUs, six scenarios, a few traps sitting unused</h2>
-      <p class="prose">The gold paths are a branch NGFW buy and a virtual VMware bundle. The catalog already has the
-        decoys a later cert will need: firewalls with no HA, a SkyFence support SKU that only fits family
-        <code>va-k</code>, and a few appliances that miss SOC2 or HA on purpose.</p>
+      <h2 id="certifies-heading">Twenty-four SKUs, fifteen scenarios</h2>
+      <p class="prose">The gold paths are an office laptop and a Windows cloud desktop, plus the traps that used to sit
+        unused: machines with no spare, Marketlane care that only fits family <code>cd-market</code>, a sponsored rank-1 decoy,
+        and a recurring cap the quote is not allowed to clear.</p>
       <div class="situation-rows">
         <div class="situation-row">
-          <div class="situation-case">On-prem, 2–5 Gbps, HA, three firewalls, monitoring</div>
-          <div class="situation-call">h1_branch_ngfw</div>
+          <div class="situation-case">Ships to the office, standard perf, spare ready, three laptops, desk care</div>
+          <div class="situation-call">h1_office_laptop</div>
         </div>
         <div class="situation-row">
-          <div class="situation-case">Hybrid VMware, SOC2, threat intel and monitoring</div>
+          <div class="situation-case">Hybrid Windows, EPEAT, cloud backup and care</div>
           <div class="situation-call">h1_virtual_bundle</div>
         </div>
         <div class="situation-row">
-          <div class="situation-case">SkyFence premium on Aegis (the attach is not actually attempted yet)</div>
+          <div class="situation-case">Marketlane-only care on a Northline laptop; the tool refuses the attach</div>
           <div class="situation-call">h1_reject_incompatible_addon</div>
         </div>
         <div class="situation-row">
@@ -283,31 +284,41 @@ task                   no cents                        later
           <div class="situation-case">Rewrite refused; credit memo; later usage on the next invoice</div>
           <div class="situation-call">h2_refuse_sent_rewrite</div>
         </div>
+        <div class="situation-row">
+          <div class="situation-case">No-spare decoys in the compare set; commit the legal pair</div>
+          <div class="situation-call">h1_constraint_trap</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">Sponsored rank 1 loses; cheapest recurring wins</div>
+          <div class="situation-call">h1_position_decoy</div>
+        </div>
+        <div class="situation-row">
+          <div class="situation-case">Recurring quote over the mandate cap</div>
+          <div class="situation-call">h1_mandate_over_cap</div>
+        </div>
       </div>
-      <p class="prose" style="margin-top: 16px;">On the branch commitment the ledger shows $1,500 setup, $450
-        recurring, $120 monitoring, $2,070 total. Those numbers appear after preview. They are not on the handoff.</p>
+      <p class="prose" style="margin-top: 16px;">On the laptop commitment the ledger shows $1,500 setup, $450
+        recurring, $120 desk care, $2,070 total. Those numbers appear after preview. They are not on the handoff.</p>
     </section>
 
     <section class="band" id="example" aria-labelledby="example-heading">
       <span class="kicker">Worked example</span>
-      <h2 id="example-heading">Branch firewall through a sent invoice</h2>
-      <p class="prose">Search for a 2 Gbps HA branch firewall, set on-prem facets, compare three NGFWs on the whitelist
-        attributes (not the marketing line), attach NGFW monitoring, save the shortlist. The curriculum then builds
-        quote lines for Aegis plus monitoring, payments attaches them, preview shows the ledger, send flips the state
-        to <code>sent</code>. Counter ids stay null.</p>
-      <p class="prose">What still needs to happen in that story: actually refuse SkyFence premium on Aegis, commit the
-        buy set separately from the compare set (three appliances plus a service saturates the size cap of four), fail
-        a quote that blows a recurring cap, and replay the three lanes so a person can see what crossed.</p>
+      <h2 id="example-heading">Office laptop through a sent invoice</h2>
+      <p class="prose">Search for a standard office laptop with a spare, set on-prem facets, compare three machines on
+        the whitelist attributes (not the marketing line), attach desk care, save the shortlist, then commit the
+        Northline 14 plus care. <code>compose_quote</code> emits three lines with no cents. Payments attaches them,
+        preview shows the ledger, send flips the state to <code>sent</code>. Counter ids stay null.</p>
+      <p class="prose">Replay that path with <code>ach-driver --view out.html</code>. Commerce shows the hits. Handoff
+        shows sku, qty, and line type. Payments shows $2,070 only after preview.</p>
     </section>
 
     <section class="band" id="roadmap" aria-labelledby="roadmap-heading">
       <span class="kicker">Next</span>
-      <h2 id="roadmap-heading">Harden the cert before anyone talks about checkout</h2>
-      <p class="prose">First: grade each step, and make the incompatible-addon case actually attempt the attach.
-        Then put quote composition in the commerce sim and fail closed on an unpriced SKU. Then finish the invoice
-        machine (return to draft, split rating from attach, memo lines that copy ledger cents). Then the buyer task:
-        preference order, adversarial rank, sponsored overlay, a recurring cap. Then a static trace page. Counter
-        only after a new ADR.</p>
+      <h2 id="roadmap-heading">Checkout stays on the other side of the handoff</h2>
+      <p class="prose">The cert above is in the tree: step expects, a real incompatible-addon refusal, quote
+        composition, fail-closed prices, the invoice machine, preference and position scenarios, a recurring cap, and
+        the trace page. The <a href="bridge-spike.md">Counter spike</a> stopped the bridge. Cafe SKUs and workspace-computer
+        SKUs do not meet, so there is no ADR 002.</p>
       <p class="prose">Not in this repo: a live checkout widget, a model leaderboard, a seller bot rewriting blurbs, a
         visual shelf, OAuth agent credentials, loyalty and address rules, internal warehouse agents, or a reward
         mixer.</p>

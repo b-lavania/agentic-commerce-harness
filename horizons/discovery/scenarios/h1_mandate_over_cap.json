@@ -1,0 +1,51 @@
+{
+  "id": "h1_mandate_over_cap",
+  "horizon": "h1",
+  "description": "Branch quote recurring cents exceed the buyer mandate. compose_quote refuses. The cert passes because the refusal is the gold outcome.",
+  "catalog": "horizons/discovery/catalog/v1.json",
+  "max_macro_steps": 40,
+  "task": {
+    "intent": "office laptop standard spare",
+    "constraints": { "deployment": "on_prem", "perf": "standard", "spare": "required" },
+    "mandate": {
+      "max_recurring_cents_per_month": 10000,
+      "allowed_line_types": ["setup", "recurring"]
+    }
+  },
+  "steps": [
+    { "action": "search", "body": { "q": "office laptop standard spare" } },
+    {
+      "action": "set_facets",
+      "body": { "deployment": "on_prem", "perf": "standard", "spare": "required" }
+    },
+    {
+      "action": "compare",
+      "body": { "ids": ["nl-14", "hb-16", "fk-mini"] }
+    },
+    { "action": "list_addons", "body": { "appliance_id": "nl-14" } },
+    { "action": "attach_addon", "body": { "service_id": "care-desk" } },
+    {
+      "action": "save_shortlist",
+      "body": { "ids": ["nl-14", "hb-16", "fk-mini", "care-desk"] }
+    },
+    {
+      "action": "commit_shortlist",
+      "body": { "ids": ["nl-14", "care-desk"] }
+    },
+    {
+      "action": "compose_quote",
+      "body": {},
+      "expect": { "ok": false, "error": "mandate_violation" }
+    }
+  ],
+  "expect": {
+    "shortlist_passes_oracle": true,
+    "milestones": ["facets_applied", "compared", "addon_in_path", "shortlist_saved"],
+    "constraints": {
+      "deployment": "on_prem",
+      "perf": "standard",
+      "spare": "required"
+    },
+    "forbidden_actions": ["checkout", "set_amount"]
+  }
+}

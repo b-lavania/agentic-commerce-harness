@@ -21,6 +21,7 @@ Or open [`index.html`](index.html) from a file browser.
 | [`insights.md`](insights.md) | Long-form claims with Shipped / Planned / Out of scope |
 | [`roadmap.md`](roadmap.md) | Badge legend and cert order |
 | [`adr/001-no-counter-v1.md`](adr/001-no-counter-v1.md) | No Counter dependency in v1 |
+| [`bridge-spike.md`](bridge-spike.md) | Phase 0 catalog spike: pivot, no shared SKUs |
 
 ## GitHub Pages
 

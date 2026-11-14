@@ -33,3 +33,7 @@ Handoff JSON
 ```
 
 Until then, this ADR forbids importing Counter code into `src/ach/`.
+
+## Spike
+
+[docs/bridge-spike.md](../bridge-spike.md) compared catalogs. Counter’s seed is a cafe menu. This repo’s catalog is workspace computers. No shared SKU, so the bridge does not continue and ADR 002 is not opened.

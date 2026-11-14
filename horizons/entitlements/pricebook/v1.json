@@ -2,17 +2,17 @@
   "version": "v1",
   "currency": "USD",
   "prices": {
-    "ngfw-a-2g": { "setup": 150000, "recurring": 45000 },
-    "ngfw-b-3g": { "setup": 180000, "recurring": 52000 },
-    "ngfw-c-2g": { "setup": 120000, "recurring": 38000 },
-    "va-g-vmw": { "setup": 80000, "recurring": 28000 },
-    "va-h-vmw": { "setup": 75000, "recurring": 26000 },
-    "svc-mon-ngfw": { "setup": 0, "recurring": 12000 },
-    "svc-mon-va": { "setup": 0, "recurring": 15000 },
-    "svc-ti-va": { "setup": 0, "recurring": 9000 },
-    "svc-ti-ngfw": { "setup": 0, "recurring": 8000 },
-    "svc-support-premium": { "setup": 0, "recurring": 20000 },
-    "svc-support-aegis": { "setup": 0, "recurring": 18000 },
-    "usage-ai-overage": { "usage": 100 }
+    "nl-14": { "setup": 150000, "recurring": 45000 },
+    "hb-16": { "setup": 180000, "recurring": 52000 },
+    "fk-mini": { "setup": 120000, "recurring": 38000 },
+    "cd-win": { "setup": 80000, "recurring": 28000 },
+    "cd-bright": { "setup": 75000, "recurring": 26000 },
+    "care-desk": { "setup": 0, "recurring": 12000 },
+    "care-cloud": { "setup": 0, "recurring": 15000 },
+    "backup-cloud": { "setup": 0, "recurring": 9000 },
+    "backup-desk": { "setup": 0, "recurring": 8000 },
+    "care-market": { "setup": 0, "recurring": 20000 },
+    "care-northline": { "setup": 0, "recurring": 18000 },
+    "usage-backup-gb": { "usage": 100 }
   }
 }

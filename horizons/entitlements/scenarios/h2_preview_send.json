@@ -3,24 +3,24 @@
   "horizon": "h2",
   "description": "Attach setup + recurring from shortlist; preview; variance 0; send → sent",
   "pricebook": "horizons/entitlements/pricebook/v1.json",
-  "fixture": "horizons/entitlements/fixtures/h2_shortlist_ngfw.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
   "max_macro_steps": 20,
   "steps": [
     {
       "action": "load_shortlist",
-      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_ngfw.json" }
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
     },
     {
       "action": "attach_line",
-      "body": { "sku_id": "ngfw-a-2g", "line_type": "setup", "qty": 1 }
+      "body": { "sku_id": "nl-14", "line_type": "setup", "qty": 1 }
     },
     {
       "action": "attach_line",
-      "body": { "sku_id": "ngfw-a-2g", "line_type": "recurring", "qty": 1 }
+      "body": { "sku_id": "nl-14", "line_type": "recurring", "qty": 1 }
     },
     {
       "action": "attach_line",
-      "body": { "sku_id": "svc-mon-ngfw", "line_type": "recurring", "qty": 1 }
+      "body": { "sku_id": "care-desk", "line_type": "recurring", "qty": 1 }
     },
     { "action": "preview_invoice", "body": {} },
     { "action": "request_send", "body": {} }

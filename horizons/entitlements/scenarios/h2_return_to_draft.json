@@ -1,0 +1,39 @@
+{
+  "id": "h2_return_to_draft",
+  "horizon": "h2",
+  "description": "Preview, refuse an edit, return to draft, swap the line, preview, send",
+  "pricebook": "horizons/entitlements/pricebook/v1.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
+  "max_macro_steps": 20,
+  "steps": [
+    {
+      "action": "load_shortlist",
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "setup", "qty": 1 }
+    },
+    { "action": "preview_invoice", "body": {} },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "recurring", "qty": 1 },
+      "expect": { "ok": false, "error": "return to draft before editing lines" }
+    },
+    { "action": "return_to_draft", "body": {} },
+    {
+      "action": "remove_line",
+      "body": { "sku_id": "nl-14", "line_type": "setup" }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "care-desk", "line_type": "recurring", "qty": 1 }
+    },
+    { "action": "preview_invoice", "body": {} },
+    { "action": "request_send", "body": {} }
+  ],
+  "expect": {
+    "invoice_state": "sent",
+    "milestones": ["lines_attached", "preview_ok", "sent"]
+  }
+}

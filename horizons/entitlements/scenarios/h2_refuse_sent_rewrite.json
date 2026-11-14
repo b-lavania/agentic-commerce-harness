@@ -3,24 +3,28 @@
   "horizon": "h2",
   "description": "After sent, refuse rewrite; credit memo only; later usage on next_invoice",
   "pricebook": "horizons/entitlements/pricebook/v1.json",
-  "fixture": "horizons/entitlements/fixtures/h2_shortlist_ngfw.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
   "max_macro_steps": 30,
   "steps": [
     {
       "action": "load_shortlist",
-      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_ngfw.json" }
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
     },
     {
       "action": "attach_line",
-      "body": { "sku_id": "ngfw-a-2g", "line_type": "setup", "qty": 1 }
+      "body": { "sku_id": "nl-14", "line_type": "setup", "qty": 1 }
     },
     {
       "action": "attach_line",
-      "body": { "sku_id": "ngfw-a-2g", "line_type": "recurring", "qty": 1 }
+      "body": { "sku_id": "nl-14", "line_type": "recurring", "qty": 1 }
     },
     { "action": "preview_invoice", "body": {} },
     { "action": "request_send", "body": {} },
-    { "action": "rewrite_sent", "body": { "note": "fix March" } },
+    {
+      "action": "rewrite_sent",
+      "body": { "note": "fix March" },
+      "expect": { "ok": false, "forbidden": true }
+    },
     {
       "action": "propose_credit_memo",
       "body": { "reason_code": "billing_correction" }
@@ -30,7 +34,20 @@
       "body": {
         "batch_id": "apr-usage-1",
         "units": 10,
-        "sku_id": "usage-ai-overage",
+        "sku_id": "usage-backup-gb",
+        "attribution": {
+          "partner_id": "p-100",
+          "smb_id": "smb-9",
+          "subscription_id": "sub-77"
+        }
+      }
+    },
+    {
+      "action": "attach_line",
+      "body": {
+        "sku_id": "usage-backup-gb",
+        "line_type": "usage",
+        "qty": 10,
         "attribution": {
           "partner_id": "p-100",
           "smb_id": "smb-9",

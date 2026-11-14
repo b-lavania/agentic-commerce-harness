@@ -1,8 +1,0 @@
-{
-  "shortlist_ids": ["ngfw-a-2g", "svc-mon-ngfw"],
-  "quote_lines": [
-    { "sku_id": "ngfw-a-2g", "qty": 1, "line_type": "setup" },
-    { "sku_id": "ngfw-a-2g", "qty": 1, "line_type": "recurring" },
-    { "sku_id": "svc-mon-ngfw", "qty": 1, "line_type": "recurring" }
-  ]
-}

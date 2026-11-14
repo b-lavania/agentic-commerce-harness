@@ -1,0 +1,13 @@
+{
+  "shortlist_ids": ["nl-14", "care-desk"],
+  "bill_to": {
+    "partner_id": "p-100",
+    "smb_id": "smb-9",
+    "subscription_id": "sub-77"
+  },
+  "quote_lines": [
+    { "sku_id": "nl-14", "qty": 1, "line_type": "setup" },
+    { "sku_id": "nl-14", "qty": 1, "line_type": "recurring" },
+    { "sku_id": "care-desk", "qty": 1, "line_type": "recurring" }
+  ]
+}

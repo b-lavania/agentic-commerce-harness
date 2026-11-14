@@ -10,12 +10,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from ach.models import Checklist, QuoteLine
-from ach.paths import DEFAULT_PRICEBOOK, ENTITLEMENTS, REPO_ROOT
+from ach.paths import DEFAULT_PRICEBOOK, REPO_ROOT
 
 InvoiceState = Literal["draft", "generated", "sent", "credit_memo", "next_invoice"]
 LineType = Literal["setup", "recurring", "usage"]
 
 FORBIDDEN = frozenset({"set_amount", "rewrite_sent", "checkout", "create_payment"})
+_MONEY_KEYS = ("amount_cents", "tax", "discount")
 
 
 class Attribution(BaseModel):
@@ -37,7 +38,7 @@ class InvoiceLine(BaseModel):
 
 class MeterBatch(BaseModel):
     batch_id: str
-    sku_id: str = "usage-ai-overage"
+    sku_id: str = "usage-backup-gb"
     units: int
     attribution: Attribution
     rated_cents: int | None = None
@@ -55,6 +56,7 @@ class Invoice(BaseModel):
     lines: list[InvoiceLine] = Field(default_factory=list)
     unexplained_variance_cents: int = 0
     parent_sent_id: str | None = None
+    bill_to: Attribution | None = None
 
 
 def load_pricebook(path: Path | str | None = None) -> PriceBook:
@@ -75,11 +77,14 @@ class EntitlementSim:
         self.invoice = Invoice(id=f"inv-{uuid.uuid4().hex[:8]}", state="draft")
         self.checklist.invoice_id = self.invoice.id
         self.checklist.invoice_state = self.invoice.state
+        self.bill_to: Attribution | None = None
+        self.checkout_session_id: str | None = None
         self.credit_memos: list[Invoice] = []
         self.next_invoice: Invoice | None = None
         self.meter_batches: dict[str, MeterBatch] = {}
         self.last_recon_blocked = False
         self.sent_rewrite_attempted = False
+        self.mandate_violation: str | None = None
         self.history: list[dict[str, Any]] = []
 
     def _price(self, sku_id: str, line_type: LineType) -> int:
@@ -89,19 +94,28 @@ class EntitlementSim:
         return int(entry[line_type])
 
     def _sync_checklist(self) -> None:
-        self.checklist.invoice_id = self.invoice.id
-        self.checklist.invoice_state = self.invoice.state
+        active = self.next_invoice if self.next_invoice and self.invoice.state == "sent" else self.invoice
+        self.checklist.invoice_id = active.id
+        self.checklist.invoice_state = active.state if active is not self.invoice else self.invoice.state
+        if self.next_invoice and self.invoice.state == "sent":
+            self.checklist.invoice_state = "next_invoice"
+            self.checklist.invoice_id = self.next_invoice.id
         self.checklist.quote_lines = [
-            QuoteLine(sku_id=ln.sku_id, qty=ln.qty, line_type=ln.line_type)
-            for ln in self.invoice.lines
-            if ln.line_type != "usage" or True
+            QuoteLine(sku_id=ln.sku_id, qty=ln.qty, line_type=ln.line_type) for ln in self.invoice.lines
         ]
+
+    def _apply_bill_to(self, bill_to: dict[str, Any] | None) -> None:
+        if bill_to is None:
+            return
+        self.bill_to = Attribution.model_validate(bill_to)
+        self.invoice.bill_to = self.bill_to
 
     def load_shortlist(
         self,
         shortlist_ids: list[str] | None = None,
         quote_lines: list[dict[str, Any]] | None = None,
         fixture: str | None = None,
+        bill_to: dict[str, Any] | None = None,
         **_: Any,
     ) -> dict[str, Any]:
         if fixture:
@@ -111,7 +125,11 @@ class EntitlementSim:
             data = json.loads(path.read_text(encoding="utf-8"))
             shortlist_ids = data.get("shortlist_ids", shortlist_ids)
             quote_lines = data.get("quote_lines", quote_lines)
+            if bill_to is None and data.get("bill_to") is not None:
+                bill_to = data["bill_to"]
+        self._apply_bill_to(bill_to)
         self.checklist.shortlist = list(shortlist_ids or [])
+        self.checklist.quote_lines = []
         for ql in quote_lines or []:
             self.checklist.quote_lines.append(QuoteLine.model_validate(ql))
         payload = {
@@ -119,9 +137,21 @@ class EntitlementSim:
             "ok": True,
             "shortlist_ids": self.checklist.shortlist,
             "quote_lines": [q.model_dump() for q in self.checklist.quote_lines],
+            "bill_to": self.bill_to.model_dump() if self.bill_to else None,
         }
         self.history.append(payload)
         return payload
+
+    def _money_forbidden(self, action: str, amount_cents: int | None, tax: Any, discount: Any) -> dict[str, Any] | None:
+        if amount_cents is None and tax is None and discount is None:
+            return None
+        self.checklist.forbidden_hits.append("set_amount")
+        return {
+            "action": action,
+            "ok": False,
+            "error": "agents may not supply amount_cents",
+            "forbidden": True,
+        }
 
     def attach_line(
         self,
@@ -130,16 +160,13 @@ class EntitlementSim:
         qty: int = 1,
         attribution: dict[str, Any] | None = None,
         amount_cents: int | None = None,
+        tax: Any = None,
+        discount: Any = None,
         **_: Any,
     ) -> dict[str, Any]:
-        if amount_cents is not None:
-            self.checklist.forbidden_hits.append("set_amount")
-            return {
-                "action": "attach_line",
-                "ok": False,
-                "error": "agents may not supply amount_cents",
-                "forbidden": True,
-            }
+        blocked = self._money_forbidden("attach_line", amount_cents, tax, discount)
+        if blocked:
+            return blocked
         # After credit memo, new lines go on next_invoice only.
         if self.invoice.state == "sent" and self.next_invoice is None:
             self.sent_rewrite_attempted = True
@@ -163,6 +190,7 @@ class EntitlementSim:
 
         attr = Attribution.model_validate(attribution or {}) if attribution else None
         if line_type == "usage" and (attr is None or not attr.complete()):
+            self.last_recon_blocked = True
             return {
                 "action": "attach_line",
                 "ok": False,
@@ -189,14 +217,78 @@ class EntitlementSim:
             "action": "attach_line",
             "ok": True,
             "line": line.model_dump(),
-            "invoice_state": self.invoice.state,
+            "invoice_state": target.state,
         }
         self.history.append(payload)
         return payload
 
+    def remove_line(self, sku_id: str, line_type: str, **_: Any) -> dict[str, Any]:
+        if self.invoice.state == "sent" and self.next_invoice is None:
+            self.sent_rewrite_attempted = True
+            self.checklist.forbidden_hits.append("rewrite_sent")
+            return {
+                "action": "remove_line",
+                "ok": False,
+                "error": "cannot mutate sent invoice",
+                "forbidden": True,
+            }
+        if self.invoice.state == "generated" and self.next_invoice is None:
+            return {
+                "action": "remove_line",
+                "ok": False,
+                "error": "return to draft before editing lines",
+            }
+        if self.next_invoice is not None and self.invoice.state == "sent":
+            target = self.next_invoice
+        else:
+            target = self.invoice
+        if target.state not in ("draft", "next_invoice"):
+            return {
+                "action": "remove_line",
+                "ok": False,
+                "error": f"cannot remove lines from {target.state}",
+            }
+        kept = [ln for ln in target.lines if not (ln.sku_id == sku_id and ln.line_type == line_type)]
+        if len(kept) == len(target.lines):
+            return {"action": "remove_line", "ok": False, "error": "line not found"}
+        target.lines = kept
+        self._sync_checklist()
+        payload = {
+            "action": "remove_line",
+            "ok": True,
+            "sku_id": sku_id,
+            "line_type": line_type,
+            "invoice_state": target.state,
+        }
+        self.history.append(payload)
+        return payload
+
+    def return_to_draft(self, **_: Any) -> dict[str, Any]:
+        if self.invoice.state != "generated":
+            return {
+                "action": "return_to_draft",
+                "ok": False,
+                "error": f"return_to_draft only from generated, got {self.invoice.state}",
+            }
+        self.invoice.state = "draft"
+        self.invoice.unexplained_variance_cents = 0
+        self.checklist.milestones.discard("preview_ok")
+        self._sync_checklist()
+        payload = {"action": "return_to_draft", "ok": True, "state": "draft"}
+        self.history.append(payload)
+        return payload
+
     def rate_usage(self, batch_id: str, **body: Any) -> dict[str, Any]:
+        blocked = self._money_forbidden(
+            "rate_usage",
+            body.get("amount_cents"),
+            body.get("tax"),
+            body.get("discount"),
+        )
+        if blocked:
+            return blocked
         units = int(body.get("units", 0))
-        sku_id = body.get("sku_id", "usage-ai-overage")
+        sku_id = body.get("sku_id", "usage-backup-gb")
         attr = Attribution.model_validate(body.get("attribution") or {})
         if not attr.complete():
             self.last_recon_blocked = True
@@ -222,28 +314,38 @@ class EntitlementSim:
         )
         self.meter_batches[batch_id] = batch
         self.last_recon_blocked = False
-        # Attach usage line on current draft/next
-        return self.attach_line(
-            sku_id=sku_id,
-            line_type="usage",
-            qty=units,
-            attribution=attr.model_dump(),
-        ) | {"rated_cents": rated, "batch_id": batch_id, "recon_blocked": False}
+        payload = {
+            "action": "rate_usage",
+            "ok": True,
+            "rated_cents": rated,
+            "batch_id": batch_id,
+            "recon_blocked": False,
+            "sku_id": sku_id,
+            "units": units,
+        }
+        self.history.append(payload)
+        return payload
+
+    def _active_lines(self) -> list[InvoiceLine]:
+        if self.next_invoice is not None and self.invoice.state == "sent":
+            return self.next_invoice.lines
+        return self.invoice.lines
 
     def preview_invoice(self, **_: Any) -> dict[str, Any]:
-        if self.invoice.state == "sent":
+        if self.invoice.state == "sent" and self.next_invoice is None:
             return {"action": "preview_invoice", "ok": False, "error": "already sent"}
-        # Recon: usage lines must match rated batches
-        usage_total = sum(ln.amount_cents for ln in self.invoice.lines if ln.line_type == "usage")
+        target = self.next_invoice if self.next_invoice and self.invoice.state == "sent" else self.invoice
+        if target.state == "sent":
+            return {"action": "preview_invoice", "ok": False, "error": "already sent"}
+        usage_total = sum(ln.amount_cents for ln in target.lines if ln.line_type == "usage")
         rated_total = sum(b.rated_cents or 0 for b in self.meter_batches.values())
         variance = abs(usage_total - rated_total) if self.meter_batches or usage_total else 0
-        # Also block if any usage line has incomplete attribution
-        for ln in self.invoice.lines:
+        for ln in target.lines:
             if ln.line_type == "usage" and (ln.attribution is None or not ln.attribution.complete()):
                 variance = max(variance, 1)
                 self.last_recon_blocked = True
 
-        self.invoice.unexplained_variance_cents = variance
+        target.unexplained_variance_cents = variance
         if variance != 0:
             self.last_recon_blocked = True
             payload = {
@@ -251,12 +353,13 @@ class EntitlementSim:
                 "ok": False,
                 "recon_blocked": True,
                 "unexplained_variance_cents": variance,
-                "state": self.invoice.state,
+                "state": target.state,
             }
             self.history.append(payload)
             return payload
 
-        self.invoice.state = "generated"
+        if target is self.invoice:
+            self.invoice.state = "generated"
         self.last_recon_blocked = False
         self.checklist.milestones.add("preview_ok")
         self._sync_checklist()
@@ -265,9 +368,10 @@ class EntitlementSim:
             "ok": True,
             "recon_blocked": False,
             "unexplained_variance_cents": 0,
-            "state": self.invoice.state,
-            "lines": [ln.model_dump() for ln in self.invoice.lines],
-            "total_cents": sum(ln.amount_cents for ln in self.invoice.lines),
+            "state": "generated" if target is self.invoice else target.state,
+            "lines": [ln.model_dump() for ln in target.lines],
+            "total_cents": sum(ln.amount_cents for ln in target.lines),
+            "currency": self.pricebook.currency,
         }
         self.history.append(payload)
         return payload
@@ -287,35 +391,83 @@ class EntitlementSim:
                 "recon_blocked": True,
                 "error": "recon variance nonzero",
             }
+        if self.bill_to is not None and not self.bill_to.complete():
+            self.last_recon_blocked = True
+            return {
+                "action": "request_send",
+                "ok": False,
+                "recon_blocked": True,
+                "error": "incomplete bill-to",
+            }
         self.invoice.state = "sent"
         self.checklist.milestones.add("sent")
         self._sync_checklist()
-        payload = {"action": "request_send", "ok": True, "state": "sent", "invoice_id": self.invoice.id}
+        payload = {
+            "action": "request_send",
+            "ok": True,
+            "state": "sent",
+            "invoice_id": self.invoice.id,
+            "total_cents": sum(ln.amount_cents for ln in self.invoice.lines),
+            "currency": self.pricebook.currency,
+        }
         self.history.append(payload)
         return payload
 
-    def propose_credit_memo(self, sent_id: str, reason_code: str, **_: Any) -> dict[str, Any]:
+    def propose_credit_memo(
+        self,
+        sent_id: str,
+        reason_code: str,
+        line_refs: list[dict[str, Any]] | None = None,
+        amount_cents: int | None = None,
+        **_: Any,
+    ) -> dict[str, Any]:
+        blocked = self._money_forbidden("propose_credit_memo", amount_cents, None, None)
+        if blocked:
+            return blocked
         if self.invoice.state != "sent" or self.invoice.id != sent_id:
-            # If already on next path, still allow memo referencing original
-            if not (self.invoice.state == "sent" or sent_id == self.invoice.id):
+            return {
+                "action": "propose_credit_memo",
+                "ok": False,
+                "error": "credit memo requires matching sent invoice",
+            }
+        refs = list(line_refs or [])
+        memo_lines: list[InvoiceLine] = []
+        for ref in refs:
+            sku_id = ref.get("sku_id")
+            line_type = ref.get("line_type")
+            match = next(
+                (ln for ln in self.invoice.lines if ln.sku_id == sku_id and ln.line_type == line_type),
+                None,
+            )
+            if match is None:
                 return {
                     "action": "propose_credit_memo",
                     "ok": False,
-                    "error": "credit memo requires matching sent invoice",
+                    "error": f"line_ref not on sent invoice: {sku_id} {line_type}",
                 }
+            memo_lines.append(
+                InvoiceLine(
+                    sku_id=match.sku_id,
+                    line_type=match.line_type,
+                    qty=match.qty,
+                    amount_cents=match.amount_cents,
+                    attribution=match.attribution,
+                )
+            )
         cm = Invoice(
             id=f"cm-{uuid.uuid4().hex[:8]}",
             state="credit_memo",
             parent_sent_id=sent_id,
-            lines=[],
+            lines=memo_lines,
+            bill_to=self.bill_to,
         )
         self.credit_memos.append(cm)
         self.next_invoice = Invoice(
             id=f"inv-{uuid.uuid4().hex[:8]}",
             state="next_invoice",
             parent_sent_id=sent_id,
+            bill_to=self.bill_to,
         )
-        # Keep sent invoice immutable; checklist points at next for further usage
         self.invoice.state = "sent"
         self.checklist.invoice_state = "next_invoice"
         self.checklist.invoice_id = self.next_invoice.id
@@ -327,6 +479,8 @@ class EntitlementSim:
             "next_invoice_id": self.next_invoice.id,
             "reason_code": reason_code,
             "sent_immutable": True,
+            "line_refs": refs,
+            "reversal_cents": sum(ln.amount_cents for ln in memo_lines),
         }
         self.history.append(payload)
         return payload
@@ -351,7 +505,13 @@ class EntitlementSim:
                 qty=int(body.get("qty", 1)),
                 attribution=body.get("attribution"),
                 amount_cents=body.get("amount_cents"),
+                tax=body.get("tax"),
+                discount=body.get("discount"),
             )
+        if action == "remove_line":
+            return self.remove_line(sku_id=body["sku_id"], line_type=body["line_type"])
+        if action == "return_to_draft":
+            return self.return_to_draft()
         if action == "rate_usage":
             body = dict(body)
             batch_id = body.pop("batch_id", "batch-1")
@@ -360,6 +520,8 @@ class EntitlementSim:
             return self.propose_credit_memo(
                 sent_id=body.get("sent_id", self.invoice.id),
                 reason_code=body.get("reason_code", "correction"),
+                line_refs=body.get("line_refs"),
+                amount_cents=body.get("amount_cents"),
             )
         if action == "load_shortlist":
             return self.load_shortlist(**body)

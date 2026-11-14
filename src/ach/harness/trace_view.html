@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harness trace</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #faf9f7;
+      --ink: #1c1917;
+      --muted: #57534e;
+      --line: #e7e5e4;
+      --teal: #0a5a46;
+      --commerce: #0a5a46;
+      --handoff: #9a3412;
+      --payments: #1e3a8a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "DM Sans", "Segoe UI", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    header, main { max-width: 880px; margin: 0 auto; padding: 24px 20px; }
+    header { padding-bottom: 0; }
+    h1 { font-size: 1.4rem; margin: 0 0 8px; }
+    p { color: var(--muted); margin: 0; }
+    .journey { margin-top: 12px; font-family: "DM Mono", ui-monospace, monospace; font-size: 0.85rem; }
+    .controls { display: flex; gap: 8px; align-items: center; margin: 16px 0; }
+    button {
+      background: var(--teal);
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .lane {
+      display: inline-block;
+      color: white;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .lane.commerce { background: var(--commerce); }
+    .lane.handoff { background: var(--handoff); }
+    .lane.payments { background: var(--payments); }
+    pre {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      overflow: auto;
+      font-family: "DM Mono", ui-monospace, monospace;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .money { font-weight: 650; margin: 8px 0 0; color: var(--ink); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Trace</h1>
+    <p id="blurb">Replay of one cert run. Handoff carries sku, qty, and line type. Cents stay on the payments lane.</p>
+    <div class="journey" id="journey"></div>
+  </header>
+  <main>
+    <div class="controls">
+      <button id="prev" type="button">Previous</button>
+      <button id="next" type="button">Next</button>
+      <span id="pos"></span>
+      <span id="lane" class="lane commerce"></span>
+    </div>
+    <p id="money" class="money"></p>
+    <pre id="step"></pre>
+  </main>
+  <script type="application/json" id="ach-trace">__ACH_TRACE_JSON__</script>
+  <script>
+    const doc = JSON.parse(document.getElementById("ach-trace").textContent);
+    const steps = doc.steps || [];
+    let i = 0;
+    const title = document.getElementById("title");
+    const journey = document.getElementById("journey");
+    const pos = document.getElementById("pos");
+    const lane = document.getElementById("lane");
+    const stepEl = document.getElementById("step");
+    const money = document.getElementById("money");
+    const prev = document.getElementById("prev");
+    const next = document.getElementById("next");
+    title.textContent = doc.title || "Trace";
+    journey.textContent = (doc.journey || []).join(" → ");
+
+    function dollars(cents) {
+      return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function render() {
+      const step = steps[i] || {};
+      pos.textContent = steps.length ? (i + 1) + " / " + steps.length : "0 / 0";
+      lane.textContent = step.lane || "";
+      lane.className = "lane " + (step.lane || "commerce");
+      prev.disabled = i <= 0;
+      next.disabled = i >= steps.length - 1;
+      if (step.lane === "payments" && typeof step.total_cents === "number") {
+        money.textContent = "Ledger " + dollars(step.total_cents) + " " + (step.currency || "USD");
+      } else if (step.lane === "handoff") {
+        money.textContent = "Handoff has no amounts. Counter fields are empty.";
+      } else {
+        money.textContent = "";
+      }
+      stepEl.textContent = JSON.stringify(step, null, 2);
+    }
+
+    prev.addEventListener("click", () => { if (i > 0) { i -= 1; render(); } });
+    next.addEventListener("click", () => { if (i < steps.length - 1) { i += 1; render(); } });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") prev.click();
+      if (event.key === "ArrowRight") next.click();
+    });
+    render();
+  </script>
+</body>
+</html>

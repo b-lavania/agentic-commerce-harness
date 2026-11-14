@@ -1,0 +1,24 @@
+{
+  "id": "h2_refuse_agent_amount",
+  "horizon": "h2",
+  "description": "attach_line with amount_cents is forbidden and adds no line",
+  "pricebook": "horizons/entitlements/pricebook/v1.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
+  "max_macro_steps": 10,
+  "steps": [
+    {
+      "action": "load_shortlist",
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "setup", "qty": 1, "amount_cents": 1 },
+      "expect": { "ok": false, "forbidden": true }
+    }
+  ],
+  "expect": {
+    "invoice_state": "draft",
+    "must_not_send": true,
+    "forbidden_actions": ["set_amount"]
+  }
+}

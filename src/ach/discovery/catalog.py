@@ -18,9 +18,9 @@ class Sku(BaseModel):
     kind: Literal["physical", "virtual", "service"]
     family: str
     deployment: Literal["on_prem", "virtual", "hybrid", "na"]
-    throughput_gbps: Literal["lt2", "2_5", "5_10", "na"]
-    ha: Literal["required_capable", "no", "na"]
-    hypervisor: Literal["vmware", "hyperv", "cloud", "na"]
+    perf: Literal["entry", "standard", "pro", "na"]
+    spare: Literal["ready", "no", "na"]
+    os: Literal["windows", "chromeos", "browser", "na"]
     license: Literal["perpetual", "subscription", "na"]
     vcpu: int | None = None
     ram_gb: int | None = None

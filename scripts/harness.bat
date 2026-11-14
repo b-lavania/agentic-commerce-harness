@@ -2,7 +2,7 @@
 REM Run cert scenarios.
 REM Usage: harness.bat
 REM        harness.bat --jsonl %TEMP%\ach-trajectories.jsonl
-REM        harness.bat run horizons\discovery\scenarios\h1_branch_ngfw.json
+REM        harness.bat run horizons\discovery\scenarios\h1_office_laptop.json
 setlocal
 call "%~dp0_common.bat"
 if "%~1"=="" (

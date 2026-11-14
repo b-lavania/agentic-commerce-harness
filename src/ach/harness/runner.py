@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -10,8 +11,13 @@ from typing import Any, Iterator
 from ach.discovery.oracle import grade_oracle
 from ach.discovery.sim import DiscoverySim
 from ach.entitlements.sim import EntitlementSim
-from ach.models import Scenario, TrajectoryRow
+from ach.models import Scenario, ScenarioStep, ScenarioStepExpect, TrajectoryRow
 from ach.paths import H1_SCENARIOS, H2_SCENARIOS, REPO_ROOT
+
+
+_HIDDEN_OBSERVATION_KEYS = frozenset(
+    {"amount_cents", "total_cents", "rated_cents", "recurring_cents", "tax", "discount"}
+)
 
 
 @dataclass
@@ -22,6 +28,22 @@ class ScenarioResult:
     failures: list[str] = field(default_factory=list)
     milestones: list[str] = field(default_factory=list)
     trajectories: list[TrajectoryRow] = field(default_factory=list)
+
+
+class ScriptedPolicy:
+    """Gold-script policy. Observation is accepted and not read."""
+
+    def __init__(self, steps: list[ScenarioStep]):
+        self._steps = steps
+        self._i = 0
+
+    def next_action(self, observation: dict[str, Any]) -> dict[str, Any] | None:
+        del observation
+        if self._i >= len(self._steps):
+            return None
+        step = self._steps[self._i]
+        self._i += 1
+        return {"action": step.action, "body": step.body, "expect": step.expect}
 
 
 def load_scenario(path: Path | str) -> Scenario:
@@ -39,62 +61,174 @@ def iter_scenario_paths() -> Iterator[Path]:
 
 
 def _obs_hash(payload: dict[str, Any]) -> str:
-    import hashlib
-
     raw = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
-def run_h1(scenario: Scenario) -> ScenarioResult:
-    sim = DiscoverySim(catalog_path=scenario.catalog)
+def _redact(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _redact(item)
+            for key, item in value.items()
+            if key not in _HIDDEN_OBSERVATION_KEYS
+        }
+    if isinstance(value, list):
+        return [_redact(item) for item in value]
+    return value
+
+
+def _observation(sim: DiscoverySim | EntitlementSim, out: dict[str, Any]) -> dict[str, Any]:
+    checklist = sim.checklist
+    return {
+        "tool": _redact(out),
+        "checklist": {
+            "intent": checklist.intent,
+            "facets": checklist.facets,
+            "compared_ids": list(checklist.compared_ids),
+            "shortlist": list(checklist.shortlist),
+            "committed": list(checklist.committed),
+            "quote_lines": [line.model_dump() for line in checklist.quote_lines],
+            "invoice_id": checklist.invoice_id,
+            "invoice_state": checklist.invoice_state,
+            "milestones": sorted(checklist.milestones),
+        },
+    }
+
+
+def _delegate(sim: DiscoverySim | EntitlementSim) -> dict[str, str] | None:
+    bill = getattr(sim, "bill_to", None)
+    if bill is not None and bill.complete():
+        return {
+            "partner_id": bill.partner_id,
+            "smb_id": bill.smb_id,
+            "subscription_id": bill.subscription_id,
+        }
+    return None
+
+
+def grade_step(expect: ScenarioStepExpect | dict[str, Any] | None, out: dict[str, Any]) -> list[str]:
+    if expect is None:
+        return []
+    parsed = expect if isinstance(expect, ScenarioStepExpect) else ScenarioStepExpect.model_validate(expect)
+    if not parsed.model_fields_set and not any(
+        getattr(parsed, name) is not None for name in ("ok", "error", "forbidden", "oracle_pass", "recon_blocked")
+    ):
+        return []
+    failures: list[str] = []
+    if parsed.ok is not None:
+        actual = bool(out["ok"]) if "ok" in out else True
+        if actual != parsed.ok:
+            failures.append(f"step ok {actual} != {parsed.ok}")
+    if parsed.error is not None and out.get("error") != parsed.error:
+        failures.append(f"step error {out.get('error')!r} != {parsed.error!r}")
+    if parsed.forbidden is not None and bool(out.get("forbidden")) != parsed.forbidden:
+        failures.append(f"step forbidden {bool(out.get('forbidden'))} != {parsed.forbidden}")
+    if parsed.oracle_pass is not None and out.get("oracle_pass") != parsed.oracle_pass:
+        failures.append(f"step oracle_pass {out.get('oracle_pass')!r} != {parsed.oracle_pass}")
+    if parsed.recon_blocked is not None and bool(out.get("recon_blocked")) != parsed.recon_blocked:
+        failures.append(
+            f"step recon_blocked {bool(out.get('recon_blocked'))} != {parsed.recon_blocked}"
+        )
+    return failures
+
+
+def _detail(out: dict[str, Any], sim: DiscoverySim | EntitlementSim) -> dict[str, Any]:
+    detail: dict[str, Any] = {
+        "error": out.get("error"),
+        "oracle_pass": out.get("oracle_pass"),
+        "recon_blocked": out.get("recon_blocked"),
+        "forbidden": bool(out.get("forbidden")),
+        "state": out.get("state") or sim.checklist.invoice_state,
+    }
+    if "total_cents" in out:
+        detail["total_cents"] = out["total_cents"]
+        detail["currency"] = out.get("currency")
+    if "quote_lines" in out:
+        detail["quote_lines"] = out["quote_lines"]
+    if out.get("mandate_violation"):
+        detail["mandate_violation"] = out["mandate_violation"]
+    return detail
+
+
+def _row(
+    scenario: Scenario,
+    index: int,
+    action: str,
+    sim: DiscoverySim | EntitlementSim,
+    out: dict[str, Any],
+) -> TrajectoryRow:
+    return TrajectoryRow(
+        scenario_id=scenario.id,
+        step=index,
+        action=action,
+        observation_hash=_obs_hash(out),
+        milestone_hits=sorted(sim.checklist.milestones),
+        forbidden=list(sim.checklist.forbidden_hits),
+        ok=bool(out["ok"]) if "ok" in out else True,
+        detail=_detail(out, sim),
+        horizon=scenario.horizon,
+        delegate=_delegate(sim),
+        mandate_violation=getattr(sim, "mandate_violation", None),
+    )
+
+
+def _play(
+    scenario: Scenario,
+    sim: DiscoverySim | EntitlementSim,
+) -> tuple[list[TrajectoryRow], list[str], bool]:
     rows: list[TrajectoryRow] = []
     failures: list[str] = []
-
+    saw_send = False
     if len(scenario.steps) > scenario.max_macro_steps:
         failures.append("step count exceeds max_macro_steps")
+    policy = ScriptedPolicy(scenario.steps)
+    observation: dict[str, Any] = {}
+    index = 0
+    while True:
+        nxt = policy.next_action(observation)
+        if nxt is None:
+            break
+        out = sim.step(nxt["action"], nxt["body"])
+        failures.extend(grade_step(nxt["expect"], out))
+        if out.get("forbidden") and nxt["action"] in (scenario.expect.forbidden_actions or []):
+            if scenario.horizon == "h1":
+                failures.append(f"gold path used forbidden action {nxt['action']}")
+        if nxt["action"] == "request_send" and out.get("ok"):
+            saw_send = True
+        rows.append(_row(scenario, index, nxt["action"], sim, out))
+        observation = _observation(sim, out)
+        index += 1
+    return rows, failures, saw_send
 
-    for i, step in enumerate(scenario.steps):
-        out = sim.step(step.action, step.body)
-        rows.append(
-            TrajectoryRow(
-                scenario_id=scenario.id,
-                step=i,
-                action=step.action,
-                observation_hash=_obs_hash(out),
-                milestone_hits=sorted(sim.checklist.milestones),
-                forbidden=list(sim.checklist.forbidden_hits),
-                ok=bool(out.get("ok", True)) if "ok" in out else True,
-                detail={"error": out.get("error"), "oracle_pass": out.get("oracle_pass")},
-            )
-        )
-        if out.get("forbidden"):
-            # Forbidden actions in the gold path are expected only when testing refusal;
-            # for H1 gold paths they are failures.
-            if step.action in (scenario.expect.forbidden_actions or []):
-                failures.append(f"gold path used forbidden action {step.action}")
 
-    # Terminal oracle
+def run_h1(scenario: Scenario) -> ScenarioResult:
+    sim = DiscoverySim(catalog_path=scenario.catalog)
+    sim.task = scenario.task
+    rows, failures, _saw_send = _play(scenario, sim)
+
     cons = scenario.expect.constraints or sim.checklist.facets
+    prefs = scenario.task.preferences if scenario.task else None
     oracle_ok, reasons = grade_oracle(
         sim.catalog,
         sim.checklist,
         constraints=cons,
         had_zero_result=sim.had_zero_result,
         recovered_from_zero=sim.recovered_from_zero,
+        preferences=prefs or None,
+        pricebook=sim.pricebook,
     )
     if scenario.expect.shortlist_passes_oracle is True and not oracle_ok:
         failures.extend(reasons or ["oracle failed"])
     if scenario.expect.shortlist_passes_oracle is False and oracle_ok:
         failures.append("expected oracle fail but passed")
 
-    for m in scenario.expect.milestones:
-        if m not in sim.checklist.milestones:
-            failures.append(f"missing milestone {m}")
+    for milestone in scenario.expect.milestones:
+        if milestone not in sim.checklist.milestones:
+            failures.append(f"missing milestone {milestone}")
 
-    # Reject scenario: shortlist must not contain incompatible svc-support-premium
-    if scenario.id == "h1_reject_incompatible_addon":
-        if "svc-support-premium" in sim.checklist.shortlist:
-            failures.append("shortlist contains incompatible svc-support-premium")
+    if scenario.task and scenario.task.must_consider_addon:
+        if "addon_in_path" not in sim.checklist.milestones:
+            failures.append("missing addon consideration")
 
     return ScenarioResult(
         scenario_id=scenario.id,
@@ -108,37 +242,11 @@ def run_h1(scenario: Scenario) -> ScenarioResult:
 
 def run_h2(scenario: Scenario) -> ScenarioResult:
     sim = EntitlementSim(pricebook_path=scenario.pricebook)
-    rows: list[TrajectoryRow] = []
-    failures: list[str] = []
-    saw_forbidden_rewrite = False
-    sent_after_block = False
-
-    for i, step in enumerate(scenario.steps):
-        out = sim.step(step.action, step.body)
-        if out.get("forbidden") and step.action == "rewrite_sent":
-            saw_forbidden_rewrite = True
-        if step.action == "request_send" and out.get("ok"):
-            sent_after_block = True
-        rows.append(
-            TrajectoryRow(
-                scenario_id=scenario.id,
-                step=i,
-                action=step.action,
-                observation_hash=_obs_hash(out),
-                milestone_hits=sorted(sim.checklist.milestones),
-                forbidden=list(sim.checklist.forbidden_hits),
-                ok=bool(out.get("ok", True)) if "ok" in out else True,
-                detail={
-                    "error": out.get("error"),
-                    "recon_blocked": out.get("recon_blocked"),
-                    "state": out.get("state") or sim.checklist.invoice_state,
-                },
-            )
-        )
+    rows, failures, sent_after_block = _play(scenario, sim)
+    saw_forbidden_rewrite = "rewrite_sent" in sim.checklist.forbidden_hits
 
     exp = scenario.expect
     if exp.invoice_state:
-        # Prefer next_invoice checklist when on credit-memo path
         state = sim.checklist.invoice_state
         if exp.invoice_state == "sent" and sim.invoice.state != "sent":
             failures.append(f"expected invoice_state sent, got {sim.invoice.state}")
@@ -151,16 +259,14 @@ def run_h2(scenario: Scenario) -> ScenarioResult:
         failures.append("expected recon_blocked")
     if exp.must_not_send and (sim.invoice.state == "sent" or sent_after_block):
         failures.append("must_not_send violated")
-    if exp.must_refuse_sent_rewrite and not (
-        saw_forbidden_rewrite or "rewrite_sent" in sim.checklist.forbidden_hits
-    ):
+    if exp.must_refuse_sent_rewrite and not saw_forbidden_rewrite:
         failures.append("expected rewrite_sent refusal")
     if exp.must_refuse_sent_rewrite and "credit_memo_only" not in sim.checklist.milestones:
         failures.append("missing credit_memo_only milestone")
 
-    for m in exp.milestones:
-        if m not in sim.checklist.milestones:
-            failures.append(f"missing milestone {m}")
+    for milestone in exp.milestones:
+        if milestone not in sim.checklist.milestones:
+            failures.append(f"missing milestone {milestone}")
 
     return ScenarioResult(
         scenario_id=scenario.id,

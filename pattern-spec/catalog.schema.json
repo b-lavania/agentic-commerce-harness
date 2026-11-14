@@ -22,9 +22,9 @@
         "kind",
         "family",
         "deployment",
-        "throughput_gbps",
-        "ha",
-        "hypervisor",
+        "perf",
+        "spare",
+        "os",
         "license",
         "certs",
         "sla",
@@ -38,15 +38,15 @@
         "kind": { "enum": ["physical", "virtual", "service"] },
         "family": { "type": "string" },
         "deployment": { "enum": ["on_prem", "virtual", "hybrid", "na"] },
-        "throughput_gbps": { "enum": ["lt2", "2_5", "5_10", "na"] },
-        "ha": { "enum": ["required_capable", "no", "na"] },
-        "hypervisor": { "enum": ["vmware", "hyperv", "cloud", "na"] },
+        "perf": { "enum": ["entry", "standard", "pro", "na"] },
+        "spare": { "enum": ["ready", "no", "na"] },
+        "os": { "enum": ["windows", "chromeos", "browser", "na"] },
         "license": { "enum": ["perpetual", "subscription", "na"] },
         "vcpu": { "type": ["integer", "null"] },
         "ram_gb": { "type": ["integer", "null"] },
         "certs": {
           "type": "array",
-          "items": { "enum": ["fedramp", "cc", "soc2"] }
+          "items": { "enum": ["epeat", "tco", "energy"] }
         },
         "sla": { "enum": ["8x5", "24x7", "na"] },
         "compatible_with": {

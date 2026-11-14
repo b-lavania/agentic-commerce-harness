@@ -1,0 +1,46 @@
+{
+  "id": "h2_rated_usage_sends",
+  "horizon": "h2",
+  "description": "Rate a batch, attach the same units, preview variance 0, send",
+  "pricebook": "horizons/entitlements/pricebook/v1.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
+  "max_macro_steps": 20,
+  "steps": [
+    {
+      "action": "load_shortlist",
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
+    },
+    {
+      "action": "rate_usage",
+      "body": {
+        "batch_id": "usage-ok",
+        "units": 4,
+        "sku_id": "usage-backup-gb",
+        "attribution": {
+          "partner_id": "p-100",
+          "smb_id": "smb-9",
+          "subscription_id": "sub-77"
+        }
+      }
+    },
+    {
+      "action": "attach_line",
+      "body": {
+        "sku_id": "usage-backup-gb",
+        "line_type": "usage",
+        "qty": 4,
+        "attribution": {
+          "partner_id": "p-100",
+          "smb_id": "smb-9",
+          "subscription_id": "sub-77"
+        }
+      }
+    },
+    { "action": "preview_invoice", "body": {} },
+    { "action": "request_send", "body": {} }
+  ],
+  "expect": {
+    "invoice_state": "sent",
+    "milestones": ["lines_attached", "preview_ok", "sent"]
+  }
+}

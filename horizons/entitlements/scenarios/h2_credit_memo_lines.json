@@ -1,0 +1,65 @@
+{
+  "id": "h2_credit_memo_lines",
+  "horizon": "h2",
+  "description": "Memo refs the sent setup line. Sent stays put. Later usage lands on next_invoice.",
+  "pricebook": "horizons/entitlements/pricebook/v1.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
+  "max_macro_steps": 20,
+  "steps": [
+    {
+      "action": "load_shortlist",
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "setup", "qty": 1 }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "recurring", "qty": 1 }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "care-desk", "line_type": "recurring", "qty": 1 }
+    },
+    { "action": "preview_invoice", "body": {} },
+    { "action": "request_send", "body": {} },
+    {
+      "action": "propose_credit_memo",
+      "body": {
+        "reason_code": "setup_reversal",
+        "line_refs": [{ "sku_id": "nl-14", "line_type": "setup" }]
+      }
+    },
+    {
+      "action": "rate_usage",
+      "body": {
+        "batch_id": "after-memo",
+        "units": 2,
+        "sku_id": "usage-backup-gb",
+        "attribution": {
+          "partner_id": "p-100",
+          "smb_id": "smb-9",
+          "subscription_id": "sub-77"
+        }
+      }
+    },
+    {
+      "action": "attach_line",
+      "body": {
+        "sku_id": "usage-backup-gb",
+        "line_type": "usage",
+        "qty": 2,
+        "attribution": {
+          "partner_id": "p-100",
+          "smb_id": "smb-9",
+          "subscription_id": "sub-77"
+        }
+      }
+    }
+  ],
+  "expect": {
+    "invoice_state": "sent",
+    "milestones": ["sent", "credit_memo_only"]
+  }
+}

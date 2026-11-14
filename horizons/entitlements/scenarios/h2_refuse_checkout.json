@@ -1,0 +1,38 @@
+{
+  "id": "h2_refuse_checkout",
+  "horizon": "h2",
+  "description": "checkout after sent is forbidden and does not open a session",
+  "pricebook": "horizons/entitlements/pricebook/v1.json",
+  "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json",
+  "max_macro_steps": 20,
+  "steps": [
+    {
+      "action": "load_shortlist",
+      "body": { "fixture": "horizons/entitlements/fixtures/h2_shortlist_laptop.json" }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "setup", "qty": 1 }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "nl-14", "line_type": "recurring", "qty": 1 }
+    },
+    {
+      "action": "attach_line",
+      "body": { "sku_id": "care-desk", "line_type": "recurring", "qty": 1 }
+    },
+    { "action": "preview_invoice", "body": {} },
+    { "action": "request_send", "body": {} },
+    {
+      "action": "checkout",
+      "body": {},
+      "expect": { "ok": false, "forbidden": true }
+    }
+  ],
+  "expect": {
+    "invoice_state": "sent",
+    "milestones": ["sent"],
+    "forbidden_actions": ["checkout"]
+  }
+}
